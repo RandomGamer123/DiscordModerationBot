@@ -22,7 +22,19 @@ def get_warnings():
     response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Warnings!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
     return response["values"]
 
+def get_kicks():
+    global warninglogid
+    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Kicks!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    return response["values"]
+
+def get_bans():
+    global warninglogid
+    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Bans!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    return response["values"]
+    
 warnings = get_warnings()
+kicks = get_kicks()
+bans = get_bans()
 
 @client.event
 async def on_ready():
@@ -33,6 +45,8 @@ async def on_ready():
 @client.event
 async def on_message(message):
     global warnings
+    global kicks
+    global bans
     if message.author == client.user:
         return
     if not (message.content.startswith(config["prefix"])):
@@ -41,7 +55,7 @@ async def on_message(message):
     command = args.pop(0)
     #perms means the permission the user has: developer -> 40, has admin rights (ie csuite+ and admin+) -> 31, moderator -> 30, Other HRs -> 20, verified members -> 11, message sent in DM -> 10, all users -> 0
     perms = 0
-    if message.author.id in [156390113654341632]: 
+    if message.author.id in [156390113654341632,463016897110343690,676596209627955231]: 
         perms = 40 
     elif isinstance(message.channel, discord.abc.GuildChannel):
         if message.author.guild_permissions.administrator:
@@ -111,13 +125,69 @@ async def on_message(message):
                     return
             msgstring = ""
             for warning in warnings:
-                if warning[0] == searchid:
+                if str(warning[0]) == str(searchid):
                     if msgstring != "":
                         msgstring = msgstring+"\n"
                     msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" for reason: \n"+warning[4]
-            for i in range(0,len(msgstring),1994):
-                await message.channel.send("```"+msgstring[i:i+1994]+"```")
-                
+            if (msgstring == ""):
+                await message.channel.send("This user has no warnings.")
+            else:
+                for i in range(0,len(msgstring),1994):
+                    await message.channel.send("```"+msgstring[i:i+1994]+"```")
+    if (command == "kick" and perms >= 30):
+        kicks = get_kicks()
+        if len(args) < 1:
+            await message.channel.send("You need at least 1 argument in this command.")
+            return
+        if (args[0].isnumeric()):
+            id = args[0]
+        else:
+            pingmatch = re.compile("<@![0-9]{6,19}>");
+            if pingmatch.match(args[0]):
+                id = args[0][3:-1]
+            else:
+                await message.channel.send("Argument 1 of this command must be a user id or mention.")
+                return
+        user = client.get_user(int(id))
+        if (user.id == message.author.id):
+            await message.channel.send("You cannot kick yourself.")
+            return
+        username = user.name+" #"+user.discriminator
+        mod = message.author.name
+        uniqueid = "K"+str(len(kicks)+1)
+        args.pop(0)
+        reason = " ".join(args)
+        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Kicks!A1:F2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Kicked via bot)")]]}).execute()
+        await message.guild.kick(user,reason=reason)
+        await message.channel.send("User <@!"+str(user.id)+"> has been kicked for reason: `"+reason+"` by moderator "+mod)
+        kicks = get_kicks()
+    if (command == "ban" and perms >= 30):
+        bans = get_bans()
+        if len(args) < 1:
+            await message.channel.send("You need at least 1 argument in this command.")
+            return
+        if (args[0].isnumeric()):
+            id = args[0]
+        else:
+            pingmatch = re.compile("<@![0-9]{6,19}>");
+            if pingmatch.match(args[0]):
+                id = args[0][3:-1]
+            else:
+                await message.channel.send("Argument 1 of this command must be a user id or mention.")
+                return
+        user = client.get_user(int(id))
+        if (user.id == message.author.id):
+            await message.channel.send("You cannot ban yourself.")
+            return
+        username = user.name+" #"+user.discriminator
+        mod = message.author.name
+        uniqueid = "B"+str(len(bans)+1)
+        args.pop(0)
+        reason = " ".join(args)
+        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Bans!A1:F2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Banned via bot)")]]}).execute()
+        await message.guild.ban(user,reason=reason)
+        await message.channel.send("User <@!"+str(user.id)+"> has been banned for reason: `"+reason+"` by moderator "+mod)
+        bans = get_bans()           
 if os.getenv("BOTTOKEN"):
     bottoken = os.getenv("BOTTOKEN")
 else: 
