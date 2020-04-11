@@ -88,6 +88,9 @@ async def on_message(message):
         warnings = get_warnings()
     if (command == "warnings" and perms >=30):
         warnings = get_warnings()
+        if len(args) < 1:
+            await message.channel.send("You need at least 1 argument in this command.")
+            return
         if (args[0] == "all"):
             msgstring = ""
             for warning in warnings:
@@ -96,6 +99,25 @@ async def on_message(message):
                 msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" for reason: \n"+warning[4]
             for i in range(0,len(msgstring),1994):
                 await message.channel.send("```"+msgstring[i:i+1994]+"```")
+        else:
+            if (args[0].isnumeric()):
+                searchid = args[0]
+            else:
+                pingmatch = re.compile("<@![0-9]{6,19}>");
+                if pingmatch.match(args[0]):
+                    searchid = args[0][3:-1]
+                else:
+                    await message.channel.send("Argument 1 of this command must be a user id or mention.")
+                    return
+            msgstring = ""
+            for warning in warnings:
+                if warning[0] == searchid:
+                    if msgstring != "":
+                        msgstring = msgstring+"\n"
+                    msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" for reason: \n"+warning[4]
+            for i in range(0,len(msgstring),1994):
+                await message.channel.send("```"+msgstring[i:i+1994]+"```")
+                
 if os.getenv("BOTTOKEN"):
     bottoken = os.getenv("BOTTOKEN")
 else: 
