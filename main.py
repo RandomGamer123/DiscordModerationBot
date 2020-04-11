@@ -1,4 +1,4 @@
-import discord,json,os,re,httplib2
+import discord,json,os,re,httplib2,time,datetime
 from apiclient import discovery
 from google.oauth2 import service_account
 
@@ -19,17 +19,17 @@ warninglogid = tokens["warninglogid"]
 
 def get_warnings():
     global warninglogid
-    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Warnings!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Warnings!A2:G", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
     return response["values"]
 
 def get_kicks():
     global warninglogid
-    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Kicks!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Kicks!A2:G", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
     return response["values"]
 
 def get_bans():
     global warninglogid
-    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Bans!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Bans!A2:G", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
     return response["values"]
     
 warnings = get_warnings()
@@ -97,7 +97,7 @@ async def on_message(message):
         uniqueid = "W"+str(len(warnings)+1)
         args.pop(0)
         reason = " ".join(args)
-        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Warnings!A1:F2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Warned via bot)")]]}).execute()
+        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Warnings!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Warned via bot)"),str(round(time.time()))]]}).execute()
         await message.channel.send("User <@!"+str(user.id)+"> has been warned for reason: `"+reason+"` by moderator "+mod)
         warnings = get_warnings()
     if (command == "warnings" and perms >=30):
@@ -110,7 +110,11 @@ async def on_message(message):
             for warning in warnings:
                 if msgstring != "":
                     msgstring = msgstring+"\n"
-                msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" for reason: \n"+warning[4]
+                if warning[6] == "NA":
+                    evttime = "an unknown time"
+                else:
+                    evttime = datetime.datetime.fromtimestamp(int(warning[6])).strftime('%Y-%m-%d %H:%M:%S')
+                msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" at "+evttime+" for reason: \n"+warning[4]
             for i in range(0,len(msgstring),1994):
                 await message.channel.send("```"+msgstring[i:i+1994]+"```")
         else:
@@ -128,7 +132,11 @@ async def on_message(message):
                 if str(warning[0]) == str(searchid):
                     if msgstring != "":
                         msgstring = msgstring+"\n"
-                    msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" for reason: \n"+warning[4]
+                    if warning[6] == "NA":
+                        evttime = "an unknown time"
+                    else:
+                        evttime = datetime.datetime.fromtimestamp(int(warning[6])).strftime('%Y-%m-%d %H:%M:%S')
+                    msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" at "+evttime+" for reason: \n"+warning[4]
             if (msgstring == ""):
                 await message.channel.send("This user has no warnings.")
             else:
@@ -157,7 +165,7 @@ async def on_message(message):
         uniqueid = "K"+str(len(kicks)+1)
         args.pop(0)
         reason = " ".join(args)
-        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Kicks!A1:F2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Kicked via bot)")]]}).execute()
+        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Kicks!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Kicked via bot)"),str(round(time.time()))]]}).execute()
         await message.guild.kick(user,reason=reason)
         await message.channel.send("User <@!"+str(user.id)+"> has been kicked for reason: `"+reason+"` by moderator "+mod)
         kicks = get_kicks()
@@ -184,7 +192,7 @@ async def on_message(message):
         uniqueid = "B"+str(len(bans)+1)
         args.pop(0)
         reason = " ".join(args)
-        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Bans!A1:F2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Banned via bot)")]]}).execute()
+        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Bans!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Banned via bot)"),str(round(time.time()))]]}).execute()
         await message.guild.ban(user,reason=reason)
         await message.channel.send("User <@!"+str(user.id)+"> has been banned for reason: `"+reason+"` by moderator "+mod)
         bans = get_bans()           
