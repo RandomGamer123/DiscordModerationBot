@@ -2,8 +2,11 @@ import discord,json
 
 client = discord.Client()
 
-with open("Config/config.json") as json_data_file:
-    configs = json.load(json_data_file)
+with open("Config/token.json") as token_file:
+    tokens = json.load(token_file)
+    
+with open("Config/config.json") as config_file:
+    config = json.load(config_file);
     
 @client.event
 async def on_ready():
@@ -13,4 +16,6 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-client.run(configs["bottoken"])
+    if (message.content.startswith(config["prefix"])):
+        return
+client.run(tokens["bottoken"])
