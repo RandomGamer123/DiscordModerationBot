@@ -80,16 +80,22 @@ async def on_message(message):
         user = client.get_user(int(id))
         username = user.name+" #"+user.discriminator
         mod = message.author.name
-        uniqueid = len(warnings)+1
+        uniqueid = "W"+str(len(warnings)+1)
         args.pop(0)
         reason = " ".join(args)
-        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Warnings!A1:F2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[user.id,username,uniqueid,"",reason,(mod+" (Warned via bot)")]]}).execute()
+        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Warnings!A1:F2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Warned via bot)")]]}).execute()
         await message.channel.send("User <@!"+str(user.id)+"> has been warned for reason: `"+reason+"` by moderator "+mod)
         warnings = get_warnings()
     if (command == "warnings" and perms >=30):
         warnings = get_warnings()
         if (args[0] == "all"):
-            await message.channel.send(warnings)
+            msgstring = ""
+            for warning in warnings:
+                if msgstring != "":
+                    msgstring = msgstring+"\n"
+                msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" for reason: \n"+warning[4]
+            for i in range(0,len(msgstring),1994):
+                await message.channel.send("```"+msgstring[i:i+1994]+"```")
 if os.getenv("BOTTOKEN"):
     bottoken = os.getenv("BOTTOKEN")
 else: 
