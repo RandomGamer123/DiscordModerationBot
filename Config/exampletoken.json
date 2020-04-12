@@ -1,4 +1,5 @@
 {
 	"bottoken":"YOUR TOKEN HERE",
-	"warninglogid":"THE GOOGLE SHEETS ID HERE"
+	"warninglogid":"THE GOOGLE SHEETS ID HERE",
+	"verifylogid":"THE GOOGLE SHEETS ID HERE"
 }

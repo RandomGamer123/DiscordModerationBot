@@ -16,6 +16,7 @@ credentials = service_account.Credentials.from_service_account_file(secret_file,
 service = discovery.build('sheets','v4',credentials=credentials)
     
 warninglogid = tokens["warninglogid"]
+verifylogid = tokens["verifylogid"]
 
 def get_warnings():
     global warninglogid
@@ -47,6 +48,8 @@ async def on_message(message):
     global warnings
     global kicks
     global bans
+    global warninglogid
+    global verifylogid
     if message.author == client.user:
         return
     if not (message.content.startswith(config["prefix"])):
@@ -195,7 +198,9 @@ async def on_message(message):
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Bans!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Banned via bot)"),str(round(time.time()))]]}).execute()
         await message.guild.ban(user,reason=reason)
         await message.channel.send("User <@!"+str(user.id)+"> has been banned for reason: `"+reason+"` by moderator "+mod)
-        bans = get_bans()           
+        bans = get_bans()         
+    if (command == "verify"):
+    
 if os.getenv("BOTTOKEN"):
     bottoken = os.getenv("BOTTOKEN")
 else: 
