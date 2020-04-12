@@ -200,6 +200,9 @@ async def on_message(message):
         await message.channel.send("User <@!"+str(user.id)+"> has been banned for reason: `"+reason+"` by moderator "+mod)
         bans = get_bans()         
     if (command == "verify"):
+        if len(args) == 0:
+            await message.channel.send("Verification instructions: Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get a verification code valid for 5 minutes. Then input your code and Roblox username in Discord using the command `!verify [code] [username]`.")
+            return
         if len(args) < 2:
             await message.channel.send("You need at least 2 arguments for this command. Command format: !verify [code] [username]. Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get the verification code.")
             return
