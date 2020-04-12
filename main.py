@@ -235,8 +235,7 @@ async def on_message(message):
             verifiedrole = discord.utils.get(roleguild.roles, name="Verified")
             await message.author.add_roles(verifiedrole,reason="User is in the group.")
             await message.channel.send("Verification complete.")
-        for i in range(emptyvals):
-            newcodelist.append(["","","","",""])
+        clearcommand = (service.spreadsheets().values().clear(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:E")).execute()
         response = (service.spreadsheets().values().update(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:E", valueInputOption="RAW", body = {"range":"RobloxCodePairs!A2:E","majorDimension":"ROWS","values":newcodelist})).execute()
 if os.getenv("BOTTOKEN"):
     bottoken = os.getenv("BOTTOKEN")
