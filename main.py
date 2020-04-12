@@ -200,7 +200,44 @@ async def on_message(message):
         await message.channel.send("User <@!"+str(user.id)+"> has been banned for reason: `"+reason+"` by moderator "+mod)
         bans = get_bans()         
     if (command == "verify"):
-    
+        if len(args) < 2:
+            await message.channel.send("You need at least 2 arguments for this command. Command format: !verify [code] [username]. Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get the verification code.")
+            return
+        verifycodes = (service.spreadsheets().values().get(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:E", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute())["values"]
+        code = args.pop(0)
+        name = " ".join(args)
+        grouprank = -1
+        newcodelist = verifycodes[:]
+        emptyvals = 0
+        for i in range(len(verifycodes)):
+            codepair = verifycodes[i]
+            if codepair[3] < time.time():
+                newcodelist.remove(codepair)
+                emptyvals = emptyvals + 1
+            else:
+                if codepair[2] == code:
+                    if codepair[0] == name:
+                        grouprank = codepair[4]
+                        emptyvals = emptyvals + 1
+                        newcodelist.remove(codepair)
+        if (grouprank == -1):
+            await message.channel.send("A matching code and username combination cannot be found or your code has expired. Please generate a new code.")
+            return
+        if isinstance(message.channel, discord.abc.GuildChannel):
+            roleguild = message.guild
+        else:
+            roleguild = client.get_guild(348398590051221505)
+        if (grouprank == 0):
+            notingrouprole = discord.utils.get(roleguild.roles, name="NOT IN GROUP")
+            await message.author.add_roles(notingrouprole,reason="User is not in the group.")
+            await message.channel.send("You are not in the group. Please submit a request to join the group and wait until you are accepted, then request a new code a reverify. The related roles have been given.")
+        if (grouprank > 0):
+            verifiedrole = discord.utils.get(roleguild.roles, name="Verified")
+            await message.author.add_roles(verifiedrole,reason="User is in the group.")
+            await message.channel.send("Verification complete.")
+        for i in range(emptyvals):
+            newcodelist.append(["","","","",""])
+        response = (service.spreadsheets().values().update(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:E", valueInputOption="RAW", body = {"range":"RobloxCodePairs!A2:E","majorDimension":"ROWS","values":newcodelist})).execute()
 if os.getenv("BOTTOKEN"):
     bottoken = os.getenv("BOTTOKEN")
 else: 
