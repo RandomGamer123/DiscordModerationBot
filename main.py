@@ -230,6 +230,7 @@ async def on_message(message):
             roleguild = message.guild
         else:
             roleguild = client.get_guild(348398590051221505)
+        await message.author.edit(nick=codepair[0])
         if (grouprank == 0):
             notingrouprole = discord.utils.get(roleguild.roles, name="NOT IN GROUP")
             await message.author.add_roles(notingrouprole,reason="User is not in the group.")
