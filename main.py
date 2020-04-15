@@ -233,11 +233,19 @@ async def on_message(message):
         await message.author.edit(nick=codepair[0])
         if (grouprank == 0):
             notingrouprole = discord.utils.get(roleguild.roles, name="NOT IN GROUP")
+            if message.guild.id == 348398590051221505:
+                verifiedrole = discord.utils.get(roleguild.roles, name="Verified")
+                await message.author.remove_roles(verifiedrole)
             await message.author.add_roles(notingrouprole,reason="User is not in the group.")
             await message.channel.send("You are not in the group. Please submit a request to join the group and wait until you are accepted, then request a new code a reverify. The related roles have been given.")
         if (grouprank > 0):
             verifiedrole = discord.utils.get(roleguild.roles, name="Verified")
+            passengersrole = discord.utils.get(roleguild.roles, name="Passengers")
             await message.author.add_roles(verifiedrole,reason="User is in the group.")
+            await message.author.add_roles(passengersrole,reason="User is in the group.")
+            if message.guild.id == 348398590051221505:
+                notingrouprole = discord.utils.get(roleguild.roles, name="NOT IN GROUP")
+                await message.author.remove_roles(notingrouprole)
             await message.channel.send("Verification complete.")
         clearcommand = (service.spreadsheets().values().clear(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:E")).execute()
         response = (service.spreadsheets().values().update(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:E", valueInputOption="RAW", body = {"range":"RobloxCodePairs!A2:E","majorDimension":"ROWS","values":newcodelist})).execute()
