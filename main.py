@@ -100,6 +100,7 @@ async def on_message(message):
         uniqueid = "W"+str(len(warnings)+1)
         args.pop(0)
         reason = " ".join(args)
+        await user.send(content=("You have been warned in SWISS International Air Lines' Discord for reason: `"+reason+"`"))
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Warnings!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Warned via bot)"),str(round(time.time()))]]}).execute()
         await message.channel.send("User <@!"+str(user.id)+"> has been warned for reason: `"+reason+"` by moderator "+mod)
         warnings = get_warnings()
@@ -168,6 +169,7 @@ async def on_message(message):
         uniqueid = "K"+str(len(kicks)+1)
         args.pop(0)
         reason = " ".join(args)
+        await user.send(content=("You have been kicked from SWISS International Air Lines' Discord for reason: `"+reason+"`"))
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Kicks!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Kicked via bot)"),str(round(time.time()))]]}).execute()
         await message.guild.kick(user,reason=reason)
         await message.channel.send("User <@!"+str(user.id)+"> has been kicked for reason: `"+reason+"` by moderator "+mod)
@@ -195,23 +197,25 @@ async def on_message(message):
         uniqueid = "B"+str(len(bans)+1)
         args.pop(0)
         reason = " ".join(args)
+        await user.send(content=("You have been banned from SWISS International Air Lines' Discord for reason: `"+reason+"`"))
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Bans!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Banned via bot)"),str(round(time.time()))]]}).execute()
         await message.guild.ban(user,reason=reason)
         await message.channel.send("User <@!"+str(user.id)+"> has been banned for reason: `"+reason+"` by moderator "+mod)
         bans = get_bans()         
     if (command == "verify"):
         if len(args) == 0:
-            await message.channel.send("Verification instructions: Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get a verification code valid for 5 minutes. Then input your code and Roblox username in Discord using the command `!verify [code] [username]`.")
+            await message.channel.send("Verification instructions: Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get a verification code valid for 5 minutes. Then input your code and Roblox username in Discord using the command `!verify [code] [username]`. Do not include the brackets.")
             return
         if len(args) < 2:
-            await message.channel.send("You need at least 2 arguments for this command. Command format: !verify [code] [username]. Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get the verification code.")
+            await message.channel.send("You need at least 2 arguments for this command. Command format: !verify [code] [username]. Do not include the brackets. Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get the verification code.")
             return
-        verifycodes = (service.spreadsheets().values().get(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:E", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute())["values"]
+        verifycodes = (service.spreadsheets().values().get(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute())["values"]
         code = args.pop(0)
         name = " ".join(args)
         grouprank = -1
         newcodelist = verifycodes[:]
         emptyvals = 0
+        boughtclass = "EC"
         for i in range(len(verifycodes)):
             codepair = verifycodes[i]
             if codepair[3] < time.time():
@@ -221,6 +225,7 @@ async def on_message(message):
                 if codepair[2] == code:
                     if codepair[0] == name:
                         grouprank = codepair[4]
+                        boughtclass = codepair[5]
                         emptyvals = emptyvals + 1
                         newcodelist.remove(codepair)
         if (grouprank == -1):
@@ -245,10 +250,38 @@ async def on_message(message):
             await message.author.add_roles(passengersrole,reason="User is in the group.")
             if message.guild.id == 348398590051221505:
                 notingrouprole = discord.utils.get(roleguild.roles, name="NOT IN GROUP")
+                if grouprank == 241:
+                    traineerole = discord.utils.get(roleguild.roles, name="Trainee")
+                    await message.author.add_roles(traineerole)
+                if grouprank > 242:
+                    staffrole = discord.utils.get(roleguild.roles, name="Staff Members")
+                    await messsage.author_add_roles(staffrole)
+                    traineerole = discord.utils.get(roleguild.roles, name="Trainee")
+                    await message.author.remove_roles(traineerole)
+                if boughtclass == "GI":
+                    execpass = discord.utils.get(roleguild.roles, name="Executive Passengers")
+                    classrole = discord.utils.get(roleguild.roles, name="Gold Investors")
+                    await message.author.add_roles(execpass)
+                    await message.author.add_roles(classrole)
+                if boughtclass == "SI":
+                    execpass = discord.utils.get(roleguild.roles, name="Executive Passengers")
+                    classrole = discord.utils.get(roleguild.roles, name="Silver Investors")
+                    await message.author.add_roles(execpass)
+                    await message.author.add_roles(classrole)
+                if boughtclass == "FC":
+                    execpass = discord.utils.get(roleguild.roles, name="Executive Passengers")
+                    classrole = discord.utils.get(roleguild.roles, name="First Class")
+                    await message.author.add_roles(execpass)
+                    await message.author.add_roles(classrole)
+                if boughtclass == "BC":
+                    execpass = discord.utils.get(roleguild.roles, name="Executive Passengers")
+                    classrole = discord.utils.get(roleguild.roles, name="Business Class")
+                    await message.author.add_roles(execpass)
+                    await message.author.add_roles(classrole)
                 await message.author.remove_roles(notingrouprole)
             await message.channel.send("Verification complete.")
-        clearcommand = (service.spreadsheets().values().clear(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:E")).execute()
-        response = (service.spreadsheets().values().update(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:E", valueInputOption="RAW", body = {"range":"RobloxCodePairs!A2:E","majorDimension":"ROWS","values":newcodelist})).execute()
+        clearcommand = (service.spreadsheets().values().clear(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F")).execute()
+        response = (service.spreadsheets().values().update(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F", valueInputOption="RAW", body = {"range":"RobloxCodePairs!A2:E","majorDimension":"ROWS","values":newcodelist})).execute()
 if os.getenv("BOTTOKEN"):
     bottoken = os.getenv("BOTTOKEN")
 else: 
