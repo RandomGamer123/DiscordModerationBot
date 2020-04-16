@@ -255,7 +255,7 @@ async def on_message(message):
                     await message.author.add_roles(traineerole)
                 if grouprank > 242:
                     staffrole = discord.utils.get(roleguild.roles, name="Staff Members")
-                    await message.author_add_roles(staffrole)
+                    await message.author.add_roles(staffrole)
                     traineerole = discord.utils.get(roleguild.roles, name="Trainee")
                     await message.author.remove_roles(traineerole)
                 if boughtclass == "GI":
