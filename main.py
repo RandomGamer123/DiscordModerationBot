@@ -100,7 +100,7 @@ async def on_message(message):
         uniqueid = "W"+str(len(warnings)+1)
         args.pop(0)
         reason = " ".join(args)
-        embed = discord.Embed(colour=discord.Colour(0xff0000), timestamp=datetime.datetime.utcfromtimestamp(time.time()))
+        embed = discord.Embed(colour=discord.Colour(0xf0f05d), timestamp=datetime.datetime.utcfromtimestamp(time.time()))
         embed.set_footer(text="Case "+uniqueid)
         if message.guild:
             if message.guild.id == 295823905120190465:
