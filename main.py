@@ -100,7 +100,19 @@ async def on_message(message):
         uniqueid = "W"+str(len(warnings)+1)
         args.pop(0)
         reason = " ".join(args)
-        await user.send(content=("You have been warned in SWISS International Air Lines' Discord for reason: `"+reason+"`"))
+        embed = discord.Embed(colour=discord.Colour(0xff0000), timestamp=datetime.datetime.utcfromtimestamp(time.time()))
+        embed.set_footer(text="Case "+uniqueid)
+        if message.guild:
+            if message.guild.id == 295823905120190465:
+                embed.add_field(name="Notice of Warning", value="You have been warned in the SWISS Staff Discord for reason: `"+reason+"`")
+            else: 
+                embed.add_field(name="Notice of Warning", value="You have been warned in SWISS International Air Lines' Discord for reason: `"+reason+"`")
+        else:
+            embed.add_field(name="Notice of Warning", value="You have been warned in SWISS International Air Lines' Discord for reason: `"+reason+"`")
+        try:
+            await user.send(embed=embed)
+        except:
+            await message.channel.send("The bot cannot DM that user, no DM notification has been sent. The user will still be warned.")
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Warnings!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Warned via bot)"),str(round(time.time()))]]}).execute()
         await message.channel.send("User <@!"+str(user.id)+"> has been warned for reason: `"+reason+"` by moderator "+mod)
         warnings = get_warnings()
@@ -169,7 +181,19 @@ async def on_message(message):
         uniqueid = "K"+str(len(kicks)+1)
         args.pop(0)
         reason = " ".join(args)
-        await user.send(content=("You have been kicked from SWISS International Air Lines' Discord for reason: `"+reason+"`"))
+        embed = discord.Embed(colour=discord.Colour(0xff0000), timestamp=datetime.datetime.utcfromtimestamp(time.time()))
+        embed.set_footer(text="Case "+uniqueid)
+        if message.guild:
+            if message.guild.id == 295823905120190465:
+                embed.add_field(name="Notice of Kicking", value="You have been kicked from the SWISS Staff Discord for reason: `"+reason+"`")
+            else: 
+                embed.add_field(name="Notice of Kicking", value="You have been kicked from SWISS International Air Lines' Discord for reason: `"+reason+"` You can rejoin the server using the link: <https://discord.gg/SFr5f6D>.")
+        else:
+            embed.add_field(name="Notice of Kicking", value="You have been kicked from SWISS International Air Lines' Discord for reason: `"+reason+"` You can rejoin the server using the link: <https://discord.gg/SFr5f6D>.")
+        try:
+            await user.send(embed=embed)
+        except:
+            await message.channel.send("The bot cannot DM that user, no DM notification has been sent. The user will still be kicked.")
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Kicks!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Kicked via bot)"),str(round(time.time()))]]}).execute()
         await message.guild.kick(user,reason=reason)
         await message.channel.send("User <@!"+str(user.id)+"> has been kicked for reason: `"+reason+"` by moderator "+mod)
@@ -197,7 +221,19 @@ async def on_message(message):
         uniqueid = "B"+str(len(bans)+1)
         args.pop(0)
         reason = " ".join(args)
-        await user.send(content=("You have been banned from SWISS International Air Lines' Discord for reason: `"+reason+"`"))
+        embed = discord.Embed(colour=discord.Colour(0xff0000), timestamp=datetime.datetime.utcfromtimestamp(time.time()))
+        embed.set_footer(text="Case "+uniqueid)
+        if message.guild:
+            if message.guild.id == 295823905120190465:
+                embed.add_field(name="Notice of Banning", value="You have been banned from the SWISS Staff Discord for reason: `"+reason+"`")
+            else: 
+                embed.add_field(name="Notice of Banning", value="You have been banned from SWISS International Air Lines' Discord for reason: `"+reason+"`")
+        else:
+            embed.add_field(name="Notice of Banning", value="You have been banned from SWISS International Air Lines' Discord for reason: `"+reason+"`")
+        try:
+            await user.send(embed=embed)
+        except:
+            await message.channel.send("The bot cannot DM that user, no DM notification has been sent. The user will still be banned.")
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Bans!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Banned via bot)"),str(round(time.time()))]]}).execute()
         await message.guild.ban(user,reason=reason)
         await message.channel.send("User <@!"+str(user.id)+"> has been banned for reason: `"+reason+"` by moderator "+mod)
