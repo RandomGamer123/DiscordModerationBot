@@ -104,11 +104,11 @@ async def on_message(message):
         embed.set_footer(text="Case "+uniqueid)
         if message.guild:
             if message.guild.id == 295823905120190465:
-                embed.add_field(name="Notice of Warning", value="You have been warned in the SWISS Staff Discord for reason: `"+reason+"`")
+                embed.add_field(name="**Notice of Warning**", value=reason)
             else: 
-                embed.add_field(name="Notice of Warning", value="You have been warned in SWISS International Air Lines' Discord for reason: `"+reason+"`")
+                embed.add_field(name="**Notice of Warning**", value="You have been warned in SWISS International Air Lines' Discord for reason: \n"+reason)
         else:
-            embed.add_field(name="Notice of Warning", value="You have been warned in SWISS International Air Lines' Discord for reason: `"+reason+"`")
+            embed.add_field(name="**Notice of Warning**", value="You have been warned in SWISS International Air Lines' Discord for reason: \n"+reason)
         try:
             await user.send(embed=embed)
         except:
@@ -185,11 +185,11 @@ async def on_message(message):
         embed.set_footer(text="Case "+uniqueid)
         if message.guild:
             if message.guild.id == 295823905120190465:
-                embed.add_field(name="Notice of Kicking", value="You have been kicked from the SWISS Staff Discord for reason: `"+reason+"`")
+                embed.add_field(name="**Notice of Kicking**", value=reason)
             else: 
-                embed.add_field(name="Notice of Kicking", value="You have been kicked from SWISS International Air Lines' Discord for reason: `"+reason+"` You can rejoin the server using the link: <https://discord.gg/SFr5f6D>.")
+                embed.add_field(name="**Notice of Kicking**", value="You have been kicked from SWISS International Air Lines' Discord for reason: \n"+reason+"\n You can rejoin the server using the link: <https://discord.gg/SFr5f6D>.")
         else:
-            embed.add_field(name="Notice of Kicking", value="You have been kicked from SWISS International Air Lines' Discord for reason: `"+reason+"` You can rejoin the server using the link: <https://discord.gg/SFr5f6D>.")
+            embed.add_field(name="**Notice of Kicking**", value="You have been kicked from SWISS International Air Lines' Discord for reason: \n"+reason+"\n You can rejoin the server using the link: <https://discord.gg/SFr5f6D>.")
         try:
             await user.send(embed=embed)
         except:
@@ -225,11 +225,11 @@ async def on_message(message):
         embed.set_footer(text="Case "+uniqueid)
         if message.guild:
             if message.guild.id == 295823905120190465:
-                embed.add_field(name="Notice of Banning", value="You have been banned from the SWISS Staff Discord for reason: `"+reason+"`")
+                embed.add_field(name="**Notice of Banning**", value=reason)
             else: 
-                embed.add_field(name="Notice of Banning", value="You have been banned from SWISS International Air Lines' Discord for reason: `"+reason+"`")
+                embed.add_field(name="**Notice of Banning**", value="You have been banned from SWISS International Air Lines' Discord for reason: \n"+reason)
         else:
-            embed.add_field(name="Notice of Banning", value="You have been banned from SWISS International Air Lines' Discord for reason: `"+reason+"`")
+            embed.add_field(name="**Notice of Banning**", value="You have been banned from SWISS International Air Lines' Discord for reason: \n"+reason)
         try:
             await user.send(embed=embed)
         except:
