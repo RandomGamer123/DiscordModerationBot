@@ -1,0 +1,12 @@
+{
+	"help":{
+		"description":"Displays information about all commands or a specified command.",
+		"usage":"[command]",
+		"perms":0
+	},
+	"verify":{
+		"description":"Verifies that you are in the group, and gives certain relevant roles based on your rank and ownership of premium classes.",
+		"usage":"<code> <username> (For verification instructions type `!verify`)",
+		"perms":0
+	}
+}

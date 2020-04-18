@@ -10,6 +10,11 @@ with open("Config/token.json") as token_file:
 with open("Config/config.json") as config_file:
     config = json.load(config_file);
 
+with open("Config/help.json") as help_file:
+    helpdata = json.load(help_file)
+
+prefix = config["prefix"]
+
 scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 secret_file = "Config/client_secret.json"
 credentials = service_account.Credentials.from_service_account_file(secret_file, scopes=scopes)
@@ -20,7 +25,7 @@ verifylogid = tokens["verifylogid"]
 
 def get_warnings():
     global warninglogid
-    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Warnings!A2:G", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Warnings!A2:H", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
     return response["values"]
 
 def get_kicks():
@@ -50,11 +55,15 @@ async def on_message(message):
     global bans
     global warninglogid
     global verifylogid
+    global prefix
+    global helpdata
     if message.author == client.user:
         return
-    if not (message.content.startswith(config["prefix"])):
+    if not (message.content.startswith(prefix)):
         return
     args = (message.content[1:]).split(" ")
+    if len(args) == 0:
+        return
     command = args.pop(0)
     #perms means the permission the user has: developer -> 40, has admin rights (ie csuite+ and admin+) -> 31, moderator -> 30, Other HRs -> 20, verified members -> 11, message sent in DM -> 10, all users -> 0
     perms = 0
@@ -73,6 +82,34 @@ async def on_message(message):
                     perms = 11
     else:
         perms = 10
+    if (command == "help" and perms >= 0):
+        targetcmd = ""
+        if len(args) == 0:
+            targetcmd = "all"
+        else:
+            targetcmd = args[0]
+        if targetcmd.startswith("!"):
+            targetcmd = targetcmd[1:]
+        if targetcmd.startswith(prefix):
+            targetcmd = targetcmd[1:]
+        output = ""
+        if targetcmd == "all":
+            for cmd,data in helpdata.items():
+                if data["perms"] <= perms:
+                    output += "`{0}{1} {2}`- {3}\n".format(prefix,cmd,data["usage"],data["description"])
+            await message.channel.send(output+"Note that arguments encased in angle brackets (`<>`) are mandatory, while those encased in square brackets (`[]`) are optional.")
+            return
+        elif targetcmd in helpdata:
+            data = helpdata[targetcmd]
+            if data["perms"] <= perms:
+                await message.channel.send("`{0}{1} {2}`- {3}\n Note that arguments encased in angle brackets (`<>`) are mandatory, while those encased in square brackets (`[]`) are optional.".format(prefix,targetcmd,data["usage"],data["description"]))
+                return
+            else:
+                await message.channel.send("You cannot access the help for this command.")
+                return
+        else:
+            await message.channel.send("The command {}{} is not a command.".format(prefix,targetcmd))
+            return
     if (command == "getsource" and perms >= 0):
         await message.channel.send("This bot is open source, the source code is at: <https://github.com/RandomGamer123/DiscordModerationBot>.")
         return
@@ -113,9 +150,48 @@ async def on_message(message):
             await user.send(embed=embed)
         except:
             await message.channel.send("The bot cannot DM that user, no DM notification has been sent. The user will still be warned.")
-        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Warnings!A1:G2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Warned via bot)"),str(round(time.time()))]]}).execute()
+        service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Warnings!A1:H2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[str(user.id),username,uniqueid,"",reason,(mod+" (Warned via bot)"),str(round(time.time())),"Active"]]}).execute()
         await message.channel.send("User <@!"+str(user.id)+"> has been warned for reason: `"+reason+"` by moderator "+mod)
         warnings = get_warnings()
+    if (command == "removewarning" and perms >=30):
+        warnings = get_warnings()
+        if len(args) < 1:
+            await message.channel.send("You need at least 1 argument in this command.")
+            return
+        if args[0].startswith("W"):
+            case = ""
+            row = 1
+            rept = 1
+            for warning in warnings:
+                if case == "":
+                    row = row + 1
+                    if warning[2] == args[0]:
+                        case = warning
+                if warning[2].startswith("R"):
+                    if ((warning[2].split("-",1))[0])[1:] == args[0][1:]:
+                        rept = rept + 1
+            if case == "":
+                await message.channel.send("Warning with case number "+args[0]+" cannot be found.")
+                return
+            if case[7] == "Removed":
+                await message.channel.send("This warning has already been removed. To reinstate this warning, please use the {}editwarning command.".format(prefix))
+                return
+            uniqueid = "R"+(args[0][1:])
+            args.pop(0)
+            reason = " ".join(args)
+            mod = message.author.name
+            service.spreadsheets().values().update(spreadsheetId = warninglogid, range = "Warnings!H"+str(row), valueInputOption = "RAW", body = {"values":[["Removed"]]}).execute()
+            service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "Warnings!A1:H2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[[case[0],case[1],uniqueid+"-"+str(rept),"",reason,(mod+" (Warning removed via bot)"),str(round(time.time())),"NA"]]}).execute()
+            await message.channel.send("Warning W"+(uniqueid[1:])+" has been marked as removed by "+mod+" for reason:\n"+reason)
+        else:
+            await message.channel.send("Warning case number must start with W.")
+            return
+    if (command == "warningssheet" and perms >=30):
+        await message.channel.send("Link to warning sheet: <https://docs.google.com/spreadsheets/d/1OM14Up7i-XurecAYqg6JLTxeGoGnabogz-6fE7ffJHI/edit#gid=0> (Ask Random to give you editing permissions.)")
+        return
+    if (command == "editwarning" and perms >=30):
+        await message.channel.send("This command is still WIP, please directly edit the warnings sheet at <https://docs.google.com/spreadsheets/d/1OM14Up7i-XurecAYqg6JLTxeGoGnabogz-6fE7ffJHI/edit#gid=0> instead. (Ask Random to give you editing permissions.)")
+        return
     if (command == "warnings" and perms >=30):
         warnings = get_warnings()
         if len(args) < 1:
@@ -124,12 +200,28 @@ async def on_message(message):
         if (args[0] == "all"):
             msgstring = ""
             for warning in warnings:
+                if len(args) < 2:
+                    if warning[7] == "Removed":
+                        continue
+                    if warning[2].startswith("R"):
+                        continue
+                elif args[1] != "-removed": 
+                    if warning[7] == "Removed":
+                        continue
+                    if warning[2].startswith("R"):
+                        continue
                 if msgstring != "":
                     msgstring = msgstring+"\n"
                 if warning[6] == "NA":
                     evttime = "an unknown time"
                 else:
                     evttime = datetime.datetime.fromtimestamp(int(warning[6])).strftime('%Y-%m-%d %H:%M:%S')
+                if warning[2].startswith("R"):
+                    msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has had warning W"+str(warning[2][1:])+" removed by "+warning[5]+" at "+evttime+" for reason: \n"+warning[4]
+                    continue
+                if warning[7] == "Removed":
+                    msgstring = msgstring+"[WARNING HAS BEEN REMOVED] Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" at "+evttime+" for reason: \n"+warning[4]
+                    continue 
                 msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" at "+evttime+" for reason: \n"+warning[4]
             for i in range(0,len(msgstring),1994):
                 await message.channel.send("```"+msgstring[i:i+1994]+"```")
@@ -145,6 +237,16 @@ async def on_message(message):
                     return
             msgstring = ""
             for warning in warnings:
+                if len(args) < 2:
+                    if warning[7] == "Removed":
+                        continue
+                    if warning[2].startswith("R"):
+                        continue
+                elif args[1] != "-removed": 
+                    if warning[7] == "Removed":
+                        continue
+                    if warning[2].startswith("R"):
+                        continue
                 if str(warning[0]) == str(searchid):
                     if msgstring != "":
                         msgstring = msgstring+"\n"
@@ -152,6 +254,12 @@ async def on_message(message):
                         evttime = "an unknown time"
                     else:
                         evttime = datetime.datetime.fromtimestamp(int(warning[6])).strftime('%Y-%m-%d %H:%M:%S')
+                    if warning[2].startswith("R"):
+                        msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has had warning W"+str(warning[2][1:])+" removed by "+warning[5]+" at "+evttime+" for reason: \n"+warning[4]
+                        continue
+                    if warning[7] == "Removed":
+                        msgstring = msgstring+"[WARNING HAS BEEN REMOVED] Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" at "+evttime+" for reason: \n"+warning[4]
+                        continue 
                     msgstring = msgstring+"Case "+warning[2]+": User "+warning[1]+" ("+warning[0]+") has been warned by "+warning[5]+" at "+evttime+" for reason: \n"+warning[4]
             if (msgstring == ""):
                 await message.channel.send("This user has no warnings.")
@@ -238,12 +346,12 @@ async def on_message(message):
         await message.guild.ban(user,reason=reason)
         await message.channel.send("User <@!"+str(user.id)+"> has been banned for reason: `"+reason+"` by moderator "+mod)
         bans = get_bans()         
-    if (command == "verify"):
+    if (command == "verify" and perms >=0):
         if len(args) == 0:
-            await message.channel.send("Verification instructions: Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get a verification code valid for 5 minutes. Then input your code and Roblox username in Discord using the command `!verify [code] [username]`. Do not include the brackets.")
+            await message.channel.send("Verification instructions: Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get a verification code valid for 5 minutes. Then input your code and Roblox username in Discord using the command `!verify <code> <username>`. Do not include the brackets.")
             return
         if len(args) < 2:
-            await message.channel.send("You need at least 2 arguments for this command. Command format: !verify [code] [username]. Do not include the brackets. Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get the verification code.")
+            await message.channel.send("You need at least 2 arguments for this command. Command format: !verify <code> <username>. Do not include the brackets. Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get the verification code.")
             return
         verifycodes = (service.spreadsheets().values().get(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute())["values"]
         code = args.pop(0)
@@ -317,7 +425,7 @@ async def on_message(message):
                 await message.author.remove_roles(notingrouprole)
             await message.channel.send("Verification complete.")
         clearcommand = (service.spreadsheets().values().clear(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F")).execute()
-        response = (service.spreadsheets().values().update(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F", valueInputOption="RAW", body = {"range":"RobloxCodePairs!A2:E","majorDimension":"ROWS","values":newcodelist})).execute()
+        response = (service.spreadsheets().values().update(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F", valueInputOption="RAW", body = {"range":"RobloxCodePairs!A2:F","majorDimension":"ROWS","values":newcodelist})).execute()
 if os.getenv("BOTTOKEN"):
     bottoken = os.getenv("BOTTOKEN")
 else: 
