@@ -360,6 +360,7 @@ async def on_message(message):
         newcodelist = verifycodes[:]
         emptyvals = 0
         boughtclass = "EC"
+        rename = ""
         for i in range(len(verifycodes)):
             codepair = verifycodes[i]
             if codepair[3] < time.time():
@@ -372,6 +373,7 @@ async def on_message(message):
                         boughtclass = codepair[5]
                         emptyvals = emptyvals + 1
                         newcodelist.remove(codepair)
+                        rename = codepair[0]
         if (grouprank == -1):
             await message.channel.send("A matching code and username combination cannot be found or your code has expired. Please generate a new code.")
             return
@@ -379,7 +381,7 @@ async def on_message(message):
             roleguild = message.guild
         else:
             roleguild = client.get_guild(348398590051221505)
-        await message.author.edit(nick=codepair[0])
+        await message.author.edit(nick=rename)
         if (grouprank == 0):
             notingrouprole = discord.utils.get(roleguild.roles, name="NOT IN GROUP")
             if message.guild.id == 348398590051221505:
