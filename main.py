@@ -113,6 +113,10 @@ async def on_message(message):
     if (command == "getsource" and perms >= 0):
         await message.channel.send("This bot is open source, the source code is at: <https://github.com/RandomGamer123/DiscordModerationBot>.")
         return
+    if (command == "twowevent" and perms >= 0):
+        subcommand = args.pop(0)
+        if (subcommand == "info"):
+            await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info.".format(prefix))
     if (command == "testsheets" and perms >= 30):
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "TestSheet!A1:B2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[["testing",message.id]]}).execute()
     if (command == "print" and perms >= 40):
