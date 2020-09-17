@@ -1,4 +1,5 @@
-import discord,json,os,re,httplib2,time,datetime,random
+import discord,json,os,re,httplib2,time,datetime
+import numpy as np
 from apiclient import discovery
 from google.oauth2 import service_account
 
@@ -125,7 +126,7 @@ def gen_screen(requser):
         for i in range(len(responseindex)-1,-1,-1):
             responsenumberstorandomise.pop(responseindex[i])
             responsenumbersweights.pop(responseindex[i])
-    chosenresponsesnumbers = random.choices(responsenumberstorandomise,weights=responsenumbersweights,randomisecount) # Note that these numbers are indexed by 1
+    chosenresponsesnumbers = np.random.choice(responsenumberstorandomise,size=randomisecount,replace=False,weights=responsenumbersweights) # Note that these numbers are indexed by 1
     chosenresponses = []
     screenname = ""
     if (randomisecount != screensize):
