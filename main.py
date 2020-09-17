@@ -127,6 +127,8 @@ def gen_screen(requser):
         for i in range(len(responseindex)-1,-1,-1):
             responsenumberstorandomise.pop(responseindex[i])
             responsenumbersweights.pop(responseindex[i])
+    responsenumbersweights = np.asarray(responsenumbersweights,dtype=np.float64)
+    responsenumbersweights /= responsenumbersweights.sum()
     chosenresponsesnumbers = np.random.choice(responsenumberstorandomise,size=randomisecount,replace=False,p=responsenumbersweights) # Note that these numbers are indexed by 1
     chosenresponses = []
     screenname = ""
@@ -234,7 +236,7 @@ async def on_message(message):
                 for i in range(len(responses)):
                     rspstr = rspstr + id_to_char(i) + ": " + responses[i] + "\n"
                 howtovote = "How to vote?\nStart your vote with a square bracket `[`, then put the screen name, shown in the first line of this message. Then, order the responses from best to worst, with the left side being the best and the right side being the worst, then end the vote with another square bracket `]` and then DM it to the bot with the command `!twowevent vote <yourvote>` (Do not include the angle brackets.) An example vote would be: `!twowevent vote [YUASJDISIP JEDCHBFAIG]`.\nMore information can be found at the `Voting` section of the following document: https://docs.google.com/document/d/1gYozaDz-neG4QB0gg39fYPX0oI7GBFjXAb2j_fDm3lk/edit?usp=sharing"
-                await message.channel.send("```md \nScreen {}\n{}{}```".format(screenname,rspstr,howtovote))
+                await message.channel.send("```md\nScreen {}\n{}```{}".format(screenname,rspstr,howtovote))
     if (command == "testsheets" and perms >= 30):
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "TestSheet!A1:B2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[["testing",message.id]]}).execute()
     if (command == "print" and perms >= 40):
