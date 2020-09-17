@@ -1,4 +1,4 @@
-import discord,json,os,re,httplib2,time,datetime
+import discord,json,os,re,httplib2,time,datetime,random
 from apiclient import discovery
 from google.oauth2 import service_account
 
@@ -22,6 +22,7 @@ service = discovery.build('sheets','v4',credentials=credentials)
     
 warninglogid = tokens["warninglogid"]
 verifylogid = tokens["verifylogid"]
+twowsheetid = tokens["twowsheetid"]
 
 def get_warnings():
     global warninglogid
@@ -37,6 +38,104 @@ def get_bans():
     global warninglogid
     response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Bans!A2:G", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
     return response["values"]
+
+def wordcount(response):
+	response = re.sub(r"""[ \t][!"\#$%&'()*+,\-./:;<=>?@\[\\\]^_‘{|}~][ \t]"""," ",response)
+	splitrsp = response.split(' ')
+	wordcount = 0
+	for word in splitrsp:
+		if (word != ''):
+			wordcount += 1
+	return wordcount
+
+def get_twow_event_config(): # Config order: Line 0 (A2:B2) - screensize; Line 1 (A3:B3) - status [0 -> nothing, 1 -> signups, 2 -> responding, 3 -> voting]
+    global twowsheetid
+    response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "Config!A2:B", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    return response["values"]
+
+def get_vote_response_data():
+    global twowsheetid
+    responsesinforesponse = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "VoteMatrix!D1:5", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    responsesinforesponsevalues = responsesinforesponse["values"]
+    responsescount = len(responsesinforesponsevalues[0])
+    responsesinfo = [responsesinforesponsevalues[0],responsesinforesponsevalues[1],responsesinforesponsevalues[2][0:responsescount],responsesinforesponsevalues[3][0:responsescount],responsesinforesponsevalues[4][0:responsescount]]
+    return responsesinfo
+    
+def get_user_vote_index(requser): # Index is the row number in Google Sheets - 7 (so the first vote at row 7 would be 0), if user has no registered votes, returns -1
+    global twowsheetid
+    response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "VoteMatrix!B7:B", majorDimension="COLUMNS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    voteuseridlist = response["values"][0]
+    for i in range(len(voteuseridlist)):
+        if (voteuseridlist[i] == reguser):
+            return i
+    return -1
+
+def get_vote_data(voteindex): # Index is the row number in Google Sheets - 7 (so the first vote at row 7 would be 0)
+    global twowsheetid
+    response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "VoteMatrix!D{0}:{0}".format(voteindex+7), majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    return response["values"][0]
+
+def get_vote_count_data(voteindex): # Index is the row number in Google Sheets - 7 (so the first vote at row 7 would be 0)
+    global twowsheetid
+    response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "VoteCountMatrix!D{0}:{0}".format(voteindex+7), majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    return response["values"][0]
+
+def id_to_char(id):
+    if (id < 26):
+        return chr(id+65)
+    if (id < 58):
+        return chr(id+7)
+    else: 
+        return chr(id+33)
+
+def gen_screen(requser):
+    global twowsheetid
+    configs = get_twow_event_config() # Config order: Line 0 (A2:B2) - screensize; Line 1 (A3:B3) - status [0 -> nothing, 1 -> signups, 2 -> responding, 3 -> voting]
+    screensize = configs[0][1]
+    uservoteindex = get_user_vote_index(requser)
+    if (uservoteindex != -1): # User has previously voted
+        uservotecountdata = get_vote_count_data(uservoteindex)
+        uservotedata = get_vote_data(uservoteindex)
+    responsesinfo = get_vote_response_data()
+    responsesids = responsesinfo[1]
+    responseindex = [-1] # Response index starts from 0 unlike the response number on the sheet which starts from 1
+    for i in range(len(responsesids)):
+        if (responsesids[i] == requser):
+            if (responseindex[0] == -1):
+                responseindex[0] = i
+            else:
+                responseindex.append(i)
+    randomisecount = screensize
+    userresponsetoinsert = ""
+    userresponsetoinsertid = -1
+    if (responseindex[0] != -1): # User has submitted responses
+        if (uservoteindex == -1): # User has not voted
+            randomisecount = (screensize - 1)
+            userresponsetoinsert = responsesinfo[0][responseindex[0]]
+            userresponsetoinsertid = responseindex[0] 
+        else: # User has voted
+            for response in responseindex:
+                if (uservotecountdata[response] == 0): # This response has not been voted on by the user
+                    randomisecount = (screensize - 1)
+                    userresponsetoinsert = responsesinfo[0][response]
+                    userresponsetoinsertid = (response) 
+    responsenumberstorandomise = responsesinfo[2] # Note that response numbers start from 1
+    responsenumbersweights = responseinfo[3] 
+    if (responseindex[0] != -1):
+        for i in range(len(responseindex)-1,-1,-1):
+            responsenumberstorandomise.pop(responseindex[i])
+            responsenumbersweights.pop(responseindex[i])
+    chosenresponsesnumbers = random.choices(responsenumberstorandomise,weights=responsenumbersweights,randomisecount) # Note that these numbers are indexed by 1
+    chosenresponses = []
+    screenname = ""
+    if (randomisecount != screensize):
+        chosenresponses.append(userresponsetoinsert)
+        screenname = screenname + id_to_char(userresponsetoinsertid)
+    for responsenumber in chosenresponsesnumbers:
+        response = responsesinfo[0][responsenumber-1]
+        chosenresponses.append(response)
+        screenname = screenname + id_to_char(responsenumber-1)
+    return [chosenresponses,screenname]
     
 warnings = get_warnings()
 kicks = get_kicks()
@@ -114,9 +213,26 @@ async def on_message(message):
         await message.channel.send("This bot is open source, the source code is at: <https://github.com/RandomGamer123/DiscordModerationBot>.")
         return
     if (command == "twowevent" and perms >= 0):
-        subcommand = args.pop(0)
+        if (len(args) == 0):
+            subcommand = "info"
+        else:
+            subcommand = args.pop(0)
         if (subcommand == "info"):
-            await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info.".format(prefix))
+            await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info. This command must be used with a subcommand. Example subcommands include `respond` or `vote`.".format(prefix))
+        if (subcommand == "vote"):
+            if ((len(args) == 0) or (args[0] == "genscreen" and perms >= 30)): # No arguments, or force genscreen, so generate screen
+                if (len(args) == 0):
+                    requser = message.author.id
+                else:
+                    requser = args[1]
+                screendata = gen_screen(requser)
+                screenname = screendata[1]
+                responses = screendata[0]
+                rspstr = ""
+                for i in range(len(responses)):
+                    rspstr = rspstr + id_to_char(i) + ": " + responses[i] + "\n"
+                howtovote = "How to vote?\nStart your vote with a square bracket `[`, then put the screen name, shown in the first line of this message. Then, order the responses from best to worst, with the left side being the best and the right side being the worst, then end the vote with another square bracket `]` and then DM it to the bot with the command `!twowevent vote <yourvote>` (Do not include the angle brackets.) An example vote would be: `!twowevent vote [YUASJDISIP JEDCHBFAIG]`.\nMore information can be found at the `Voting` section of the following document: https://docs.google.com/document/d/1gYozaDz-neG4QB0gg39fYPX0oI7GBFjXAb2j_fDm3lk/edit?usp=sharing"
+                await message.channel.send("```md \nScreen {}\n{}{}```".format(screenname,rspstr,howtovote))
     if (command == "testsheets" and perms >= 30):
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "TestSheet!A1:B2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[["testing",message.id]]}).execute()
     if (command == "print" and perms >= 40):
