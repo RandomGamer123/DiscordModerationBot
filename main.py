@@ -122,7 +122,7 @@ def gen_screen(requser):
                     userresponsetoinsert = responsesinfo[0][response]
                     userresponsetoinsertid = (response) 
     responsenumberstorandomise = responsesinfo[2] # Note that response numbers start from 1
-    responsenumbersweights = responseinfo[3] 
+    responsenumbersweights = responsesinfo[3] 
     if (responseindex[0] != -1):
         for i in range(len(responseindex)-1,-1,-1):
             responsenumberstorandomise.pop(responseindex[i])
