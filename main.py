@@ -68,7 +68,7 @@ def get_user_vote_index(requser): # Index is the row number in Google Sheets - 7
     if "values" in response:
         voteuseridlist = response["values"][0]
         for i in range(len(voteuseridlist)):
-            if (voteuseridlist[i] == reguser):
+            if (str(voteuseridlist[i]) == str(requser)):
                 return i
     return -1
 
@@ -102,7 +102,7 @@ def gen_screen(requser):
     responsesids = responsesinfo[1]
     responseindex = [-1] # Response index starts from 0 unlike the response number on the sheet which starts from 1
     for i in range(len(responsesids)):
-        if (responsesids[i] == requser):
+        if (str(responsesids[i]) == str(requser)):
             if (responseindex[0] == -1):
                 responseindex[0] = i
             else:
@@ -123,7 +123,7 @@ def gen_screen(requser):
                     userresponsetoinsertid = (response) 
     responsenumberstorandomise = responsesinfo[2] # Note that response numbers start from 1
     responsenumbersweights = responsesinfo[3] 
-    if (responseindex[0] != -1):
+    if (randomisecount != screensize):
         for i in range(len(responseindex)-1,-1,-1):
             responsenumberstorandomise.pop(responseindex[i])
             responsenumbersweights.pop(responseindex[i])
