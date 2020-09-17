@@ -127,7 +127,7 @@ def gen_screen(requser):
         for i in range(len(responseindex)-1,-1,-1):
             responsenumberstorandomise.pop(responseindex[i])
             responsenumbersweights.pop(responseindex[i])
-    chosenresponsesnumbers = np.random.choice(responsenumberstorandomise,size=randomisecount,replace=False,weights=responsenumbersweights) # Note that these numbers are indexed by 1
+    chosenresponsesnumbers = np.random.choice(responsenumberstorandomise,size=randomisecount,replace=False,p=responsenumbersweights) # Note that these numbers are indexed by 1
     chosenresponses = []
     screenname = ""
     if (randomisecount != screensize):
