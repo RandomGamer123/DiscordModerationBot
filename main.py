@@ -65,7 +65,7 @@ def get_vote_response_data():
 def get_user_vote_index(requser): # Index is the row number in Google Sheets - 7 (so the first vote at row 7 would be 0), if user has no registered votes, returns -1
     global twowsheetid
     response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "VoteMatrix!B7:B", majorDimension="COLUMNS", valueRenderOption = "UNFORMATTED_VALUE").execute()
-    if (response.has_key("values")):
+    if "values" in response:
         voteuseridlist = response["values"][0]
         for i in range(len(voteuseridlist)):
             if (voteuseridlist[i] == reguser):
