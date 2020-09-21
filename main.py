@@ -285,6 +285,10 @@ async def on_message(message):
         return
     if not (message.content.startswith(prefix)):
         return
+    if (message.author.bot):
+        if (message.author.id == 155149108183695360):
+            await message.channel.send("Act your age, Dynosaur.")
+        return
     args = (message.content[1:]).split(" ")
     if len(args) == 0:
         return
