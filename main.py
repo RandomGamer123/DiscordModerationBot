@@ -143,7 +143,7 @@ def signup(requser,requsername,configbypass):
     contestants = get_contestants()
     is_contestant = False
     for contestant in contestants:
-        if (contestant[0] == requser):
+        if (contestant[0] == str(requser)):
             is_contestant = True
     if (is_contestant):
         return(["403","01","You have previously already signed up for this event."])
@@ -388,7 +388,12 @@ async def on_message(message):
             await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info. This command must be used with a subcommand. Example subcommands include `respond` or `vote`.".format(prefix))
         if (subcommand == "signup"):
             result = signup(message.author.id,message.author.name,cfgbypass)
-            await message.author.add_roles(participantrole,reason="Signed up for event.")
+            if (message.guild.id == 348398590051221505):
+                userobj = message.author
+            else:
+                userobj = roleguild.get_member(message.author.id)
+            if (userobj is not None):
+                await message.author.add_roles(participantrole,reason="Signed up for event.")
             await message.channel.send(result[2])
         if (subcommand == "vote"):
             if ((len(args) == 0) or (args[0] == "genscreen" and perms >= 30)): # No arguments, or force genscreen, so generate screen
