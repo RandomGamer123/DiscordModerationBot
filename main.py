@@ -393,7 +393,7 @@ async def on_message(message):
             else:
                 userobj = roleguild.get_member(message.author.id)
             if (userobj is not None):
-                await message.author.add_roles(participantrole,reason="Signed up for event.")
+                await userobj.add_roles(participantrole,reason="Signed up for event.")
             await message.channel.send(result[2])
         if (subcommand == "vote"):
             if (not isinstance(message.channel, discord.DMChannel)):
