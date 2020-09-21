@@ -388,7 +388,7 @@ async def on_message(message):
             await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info. This command must be used with a subcommand. Example subcommands include `respond` or `vote`.".format(prefix))
         if (subcommand == "signup"):
             result = signup(message.author.id,message.author.name,cfgbypass)
-            if (message.guild.id == 348398590051221505):
+            if ((message.guild is not None) and (message.guild.id == 348398590051221505)):
                 userobj = message.author
             else:
                 userobj = roleguild.get_member(message.author.id)
