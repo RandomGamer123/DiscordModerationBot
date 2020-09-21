@@ -82,6 +82,20 @@ def get_vote_count_data(voteindex): # Index is the row number in Google Sheets -
     response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "VoteCountMatrix!D{0}:{0}".format(voteindex+7), majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
     return response["values"][0]
 
+def append_vote_data(username,userid,votedata,votecountdata):
+    global twowsheetid
+    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "VoteMatrix!D7:AA8", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[votedata]}).execute()
+    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "VoteMatrix!A7:B8", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[[username,str(userid)]]}).execute()
+    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "VoteCountMatrix!D7:AA8", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[votecountdata]}).execute()
+    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "VoteCountMatrix!A7:B8", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[[username,str(userid)]]}).execute()
+    return
+
+def update_vote_data(voteindex,votedata,votecountdata):
+    global twowsheetid
+    service.spreadsheets().values().update(spreadsheetId = twowsheetid, range = "VoteMatrix!D{0}:{0}".format(voteindex+7), valueInputOption="RAW", body = {"range":"VoteMatrix!D{0}:{0}".format(voteindex+7),"majorDimension":"ROWS","values":[votedata]}).execute()
+    service.spreadsheets().values().update(spreadsheetId = twowsheetid, range = "VoteCountMatrix!D{0}:{0}".format(voteindex+7), valueInputOption="RAW", body = {"range":"VoteCountMatrix!D{0}:{0}".format(voteindex+7),"majorDimension":"ROWS","values":[votecountdata]}).execute()
+    return
+
 def id_to_char(id):
     if (id < 26):
         return chr(id+65)
@@ -89,7 +103,16 @@ def id_to_char(id):
         return chr(id+7)
     else: 
         return chr(id+33)
-
+        
+def char_to_id(char):
+    ordnum = ord(char)
+    if (ordnum < 64):
+        return (ordnum-7)
+    if (ordnum < 91):
+        return (ordnum-65)
+    else:
+        return (ordnum-33)
+        
 def get_checksum(screen):
     m = hashlib.md5(screen.encode("UTF-8")).hexdigest()[-3:]
     id1 = (int(m[0],16)<<2)+(int(m[1],16)>>2)
@@ -97,6 +120,13 @@ def get_checksum(screen):
     checksum = str(id_to_char(id1))+str(id_to_char(id2))
     return checksum
 
+def bracketremove(vote):
+    if (vote[0] == '['):
+        vote = vote[1:]
+    if (vote[-1] == ']'):
+        vote = vote[:-1]
+    return vote
+    
 def gen_screen(requser):
     global twowsheetid
     configs = get_twow_event_config() # Config order: Line 0 (A2:B2) - screensize; Line 1 (A3:B3) - status [0 -> nothing, 1 -> signups, 2 -> responding, 3 -> voting]
@@ -149,7 +179,89 @@ def gen_screen(requser):
     checksum = get_checksum(screenname)
     screenname = screenname + checksum
     return [chosenresponses,screenname]
-    
+
+def process_vote(vote,subuser,subusername):
+    global twowsheetid
+    configs = get_twow_event_config() # Config order: Line 0 (A2:B2) - screensize; Line 1 (A3:B3) - status [0 -> nothing, 1 -> signups, 2 -> responding, 3 -> voting]
+    screensize = configs[0][1]
+    uservoteindex = get_user_vote_index(subuser)
+    if (uservoteindex != -1): # User has previously voted
+        uservotecountdata = get_vote_count_data(uservoteindex)
+        uservotedata = get_vote_data(uservoteindex)
+    responsesinfo = get_vote_response_data()
+    vote = bracketremove(vote)
+    votearr = vote.split(" ",1)
+    screenpart = votearr[0]
+    votepart = votearr[1]
+    if (len(screenpart) != screensize+2):
+        return (["400","01","Your screen name has an invalid length, please make sure it matches the one you were given exactly."])
+    screenname = screenpart[:-2]
+    screenchecksum = screenpart[-2:]
+    if (get_checksum(screenname) != screenchecksum):
+        return (["400","02","Your screen name is invalid due to a non-matching checksum value, please make sure it matches the one you were given exactly."])
+    votedata = [None] * screensize
+    voteerror = False
+    extrachars = []
+    reptchars = []
+    charcount = 0
+    if (len(votepart) != screensize):
+        voteerror = True
+    for char in votepart:
+        charid = char_to_id(char)
+        if (charid < 0):
+            voteerror = True
+            extrachars.append(char)
+            charcount += 1
+            continue
+        if (charid >= screensize):
+            voteerror = True
+            extrachars.append(char)
+            charcount += 1
+            continue
+        if (votedata[charid] is not None):
+            voteerror = True
+            reptchars.append(char)
+            charcount += 1
+            continue
+        votedata[charid] = 1-(charcount/(screensize-1))
+        charcount += 1
+    if (voteerror):
+        if ((len(votepart) - len(extrachars) - len(reptchars) - screensize) == 0): # There are no missing characters
+            if (len(extrachars) == 0):
+                extrachars = ["NA"]
+            if (len(reptchars) == 0):
+                reptchars = ["NA"]
+            return (["400","03","Your vote contains invalid or repeated characters in it. Here are the characters in concern:\nInvalid / Extra Characters: {}\nRepeated Characters: {}".format(" ".join(extrachars)," ".join(reptchars))])
+        else: # There are missing characters
+            missingchars = []
+            charidcounter = 0
+            for charid in votedata:
+                if (charid is None):
+                    missingchars.append(id_to_char(charidcounter))
+                charidcounter += 1
+            if (len(extrachars) == 0):
+                extrachars = ["NA"]
+            if (len(reptchars) == 0):
+                reptchars = ["NA"]
+            return (["400","04","Your vote contains invalid, repeated, or missing characters in it. Here are the characters in concern:\nInvalid / Extra Characters: {}\nRepeated Characters: {}\nMissing Characters: {}".format(" ".join(extrachars)," ".join(reptchars)," ".join(missingchars))])
+    totalresponsecount = len(responsesinfo[0])
+    if (uservoteindex == -1):
+        uservotecountdata = [0]*totalresponsecount
+        uservotedata = [0]*totalresponsecount
+    voteincrementer = 0
+    for responsechar in screenname:
+        responseid = char_to_id(responsechar)
+        responsescore = votedata[voteincrementer]
+        uservotedata[responseid] = uservotedata[responseid] + responsescore
+        uservotecountdata[responseid] = uservotecountdata[responseid] + 1
+        voteincrementer += 1
+    if (uservoteindex == -1):
+        append_vote_data(subusername,subuser,uservotedata,uservotecountdata)
+    else:
+        update_vote_data(uservoteindex,uservotedata,uservotecountdata)
+    return (["200","01","Vote {} Recorded. To get a new screen, run {}twowevent vote.".format(vote,prefix)])
+
+
 warnings = get_warnings()
 kicks = get_kicks()
 bans = get_bans()
@@ -246,6 +358,16 @@ async def on_message(message):
                     rspstr = rspstr + id_to_char(i) + ": " + responses[i] + "\n"
                 howtovote = "How to vote?\nStart your vote with a square bracket `[`, then put the screen name, shown in the first line of this message. Then, order the responses from best to worst, with the left side being the best and the right side being the worst, then end the vote with another square bracket `]` and then DM it to the bot with the command `!twowevent vote <yourvote>` (Do not include the angle brackets.) An example vote would be: `!twowevent vote [YUASJDISIP JEDCHBFAIG]`.\nMore information can be found at the `Voting` section of the following document: https://docs.google.com/document/d/1gYozaDz-neG4QB0gg39fYPX0oI7GBFjXAb2j_fDm3lk/edit?usp=sharing"
                 await message.channel.send("```md\nScreen {}\n{}```{}".format(screenname,rspstr,howtovote))
+            else:
+                if (len(args) == 1):
+                    await message.channel.send("Your vote should include a space between the screen name and the vote. Please check your vote for errors.")
+                else:
+                    vote = " ".join(args)
+                    if (len(vote) > 200):
+                        await message.channel.send("Your vote should not be greater than 200 characters, please check your vote for errors, if you believe that your vote should actually be this long, please DM me.")
+                    else:
+                        statusresponse = process_vote(vote,message.author.id,message.author.name)
+                        await message.channel.send(statusresponse[2])
     if (command == "testsheets" and perms >= 30):
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "TestSheet!A1:B2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[["testing",message.id]]}).execute()
     if (command == "print" and perms >= 40):

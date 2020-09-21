@@ -1,0 +1,23 @@
+{
+	"statuses": {
+		"200": {
+			"01": {
+				"desc": "Vote {} Recorded. To get a new screen, run {}twowevent vote."
+			}
+		},
+		"400": {
+			"01": {
+				"desc": "Your screen name has an invalid length, please make sure it matches the one you were given exactly."
+			},
+			"02": {
+				"desc": "Your screen name is invalid due to a non-matching checksum value, please make sure it matches the one you were given exactly."
+			},
+			"03": {
+				"desc": "Your vote contains invalid or repeated characters in it. Here are the characters in concern:\nInvalid / Extra Characters: {}\nRepeated Characters: {}"
+			},
+			"04": {
+				"desc": "Your vote contains invalid, repeated, or missing characters in it. Here are the characters in concern:\nInvalid / Extra Characters: {}\nRepeated Characters: {}\nMissing Characters: {}"
+			}
+		}
+	}
+}
