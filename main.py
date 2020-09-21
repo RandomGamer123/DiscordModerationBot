@@ -1,4 +1,4 @@
-import discord,json,os,re,httplib2,time,datetime
+import discord,json,os,re,httplib2,time,datetime,hashlib
 import numpy as np
 from apiclient import discovery
 from google.oauth2 import service_account
@@ -90,6 +90,13 @@ def id_to_char(id):
     else: 
         return chr(id+33)
 
+def get_checksum(screen):
+    m = hashlib.md5(screen.encode("UTF-8")).hexdigest()[-3:]
+    id1 = (int(m[0],16)<<2)+(int(m[1],16)>>2)
+    id2 = ((int(m[1],16)%4)<<4)+(int(m[2],16))
+    checksum = str(id_to_char(id1))+str(id_to_char(id2))
+    return checksum
+
 def gen_screen(requser):
     global twowsheetid
     configs = get_twow_event_config() # Config order: Line 0 (A2:B2) - screensize; Line 1 (A3:B3) - status [0 -> nothing, 1 -> signups, 2 -> responding, 3 -> voting]
@@ -139,6 +146,8 @@ def gen_screen(requser):
         response = responsesinfo[0][responsenumber-1]
         chosenresponses.append(response)
         screenname = screenname + id_to_char(responsenumber-1)
+    checksum = get_checksum(screenname)
+    screenname = screenname + checksum
     return [chosenresponses,screenname]
     
 warnings = get_warnings()
