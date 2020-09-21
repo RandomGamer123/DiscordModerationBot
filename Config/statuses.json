@@ -3,6 +3,9 @@
 		"200": {
 			"01": {
 				"desc": "Vote {} Recorded. To get a new screen, run {}twowevent vote."
+			},
+			"02": {
+				"desc": "You have been signed up, you may now view the event channel for more information."
 			}
 		},
 		"400": {
@@ -21,7 +24,10 @@
 		},
 		"405": {
 			"01": {
-				"desc": The current status is not voting, so you may not vote right now."
+				"desc": "The current status is not voting, so you may not vote right now."
+			},
+			"02": {
+				"desc": "Signups have ended, you may not sign up right now."
 			}
 		}
 	}

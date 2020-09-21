@@ -126,6 +126,15 @@ def bracketremove(vote):
     if (vote[-1] == ']'):
         vote = vote[:-1]
     return vote
+
+def signup(requser,requsername,configbypass):
+    global twowsheetid
+    configs = get_twow_event_config()
+    status = configs[1][1]
+    if (status != 1 and not configbypass):
+        return (["405","02","Signups have ended, you may not sign up right now."])
+    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "Signup!A1:C2", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[[requser,requsername,time.time()]]}).execute()
+    return (["200","02","You have been signed up, you may now view the event channel for more information."])
     
 def gen_screen(requser,configbypass):
     global twowsheetid
@@ -361,6 +370,9 @@ async def on_message(message):
                 subcommand = args.pop(0)
         if (subcommand == "info"):
             await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info. This command must be used with a subcommand. Example subcommands include `respond` or `vote`.".format(prefix))
+        if (subcommand == "signup"):
+            result = signup(message.author.id,message.author.name,cfgbypass)
+            await message.channel.send(result[2])
         if (subcommand == "vote"):
             if ((len(args) == 0) or (args[0] == "genscreen" and perms >= 30)): # No arguments, or force genscreen, so generate screen
                 if (len(args) == 0):
