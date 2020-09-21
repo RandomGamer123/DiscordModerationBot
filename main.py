@@ -127,10 +127,13 @@ def bracketremove(vote):
         vote = vote[:-1]
     return vote
     
-def gen_screen(requser):
+def gen_screen(requser,configbypass):
     global twowsheetid
     configs = get_twow_event_config() # Config order: Line 0 (A2:B2) - screensize; Line 1 (A3:B3) - status [0 -> nothing, 1 -> signups, 2 -> responding, 3 -> voting]
     screensize = configs[0][1]
+    status = configs[1][1]
+    if (status != 3 and not configbypass):
+        return (["405","01","The current status is not voting, so you may not vote right now."])
     uservoteindex = get_user_vote_index(requser)
     if (uservoteindex != -1): # User has previously voted
         uservotecountdata = get_vote_count_data(uservoteindex)
@@ -180,10 +183,13 @@ def gen_screen(requser):
     screenname = screenname + checksum
     return [chosenresponses,screenname]
 
-def process_vote(vote,subuser,subusername):
+def process_vote(vote,subuser,subusername,configbypass):
     global twowsheetid
     configs = get_twow_event_config() # Config order: Line 0 (A2:B2) - screensize; Line 1 (A3:B3) - status [0 -> nothing, 1 -> signups, 2 -> responding, 3 -> voting]
     screensize = configs[0][1]
+    status = configs[1][1]
+    if (status != 3 and not configbypass):
+        return (["405","01","The current status is not voting, so you may not vote right now."])
     uservoteindex = get_user_vote_index(subuser)
     if (uservoteindex != -1): # User has previously voted
         uservotecountdata = get_vote_count_data(uservoteindex)
@@ -346,6 +352,13 @@ async def on_message(message):
             subcommand = "info"
         else:
             subcommand = args.pop(0)
+        cfgbypass = False
+        if (subcommand == "-bypassstatus" and perms >= 30):
+            cfgbypass = True
+            if (len(args) == 0):
+                subcommand = "info"
+            else:
+                subcommand = args.pop(0)
         if (subcommand == "info"):
             await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info. This command must be used with a subcommand. Example subcommands include `respond` or `vote`.".format(prefix))
         if (subcommand == "vote"):
@@ -354,7 +367,10 @@ async def on_message(message):
                     requser = message.author.id
                 else:
                     requser = args[1]
-                screendata = gen_screen(requser)
+                screendata = gen_screen(requser,cfgbypass)
+                if (screendata[0] == "405"): #Indicates current status is not voting, so you cannot call a voting related method
+                    await message.channel.send(screendata[2])
+                    return
                 screenname = screendata[1]
                 responses = screendata[0]
                 rspstr = ""
@@ -370,7 +386,7 @@ async def on_message(message):
                     if (len(vote) > 200):
                         await message.channel.send("Your vote should not be greater than 200 characters, please check your vote for errors, if you believe that your vote should actually be this long, please DM me.")
                     else:
-                        statusresponse = process_vote(vote,message.author.id,message.author.name)
+                        statusresponse = process_vote(vote,message.author.id,message.author.name,cfgbypass)
                         await message.channel.send(statusresponse[2])
     if (command == "testsheets" and perms >= 30):
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "TestSheet!A1:B2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[["testing",message.id]]}).execute()
