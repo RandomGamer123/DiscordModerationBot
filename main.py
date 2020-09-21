@@ -100,7 +100,7 @@ def update_vote_data(voteindex,votedata,votecountdata):
 
 def get_contestants():
     global twowsheetid
-    response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "Signups!A2:C", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "Signup!A2:C", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
     return response["values"]
     
 def id_to_char(id):
