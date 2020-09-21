@@ -396,6 +396,9 @@ async def on_message(message):
                 await message.author.add_roles(participantrole,reason="Signed up for event.")
             await message.channel.send(result[2])
         if (subcommand == "vote"):
+            if (not isinstance(message.channel, discord.DMChannel)):
+                await message.channel.send("This command must be done in DMs.")
+                return
             if ((len(args) == 0) or (args[0] == "genscreen" and perms >= 30)): # No arguments, or force genscreen, so generate screen
                 if (len(args) == 0):
                     requser = message.author.id
