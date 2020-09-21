@@ -22,6 +22,11 @@
 				"desc": "Your vote contains invalid, repeated, or missing characters in it. Here are the characters in concern:\nInvalid / Extra Characters: {}\nRepeated Characters: {}\nMissing Characters: {}"
 			}
 		},
+		"403": {
+			"01": {
+				"desc": "You have previously already signed up for this event."
+			}
+		},
 		"405": {
 			"01": {
 				"desc": "The current status is not voting, so you may not vote right now."

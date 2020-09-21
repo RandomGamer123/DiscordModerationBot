@@ -25,6 +25,8 @@ warninglogid = tokens["warninglogid"]
 verifylogid = tokens["verifylogid"]
 twowsheetid = tokens["twowsheetid"]
 
+twoweventroleid = 757702654339055736
+
 def get_warnings():
     global warninglogid
     response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Warnings!A2:H", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
@@ -96,6 +98,11 @@ def update_vote_data(voteindex,votedata,votecountdata):
     service.spreadsheets().values().update(spreadsheetId = twowsheetid, range = "VoteCountMatrix!D{0}:{0}".format(voteindex+7), valueInputOption="RAW", body = {"range":"VoteCountMatrix!D{0}:{0}".format(voteindex+7),"majorDimension":"ROWS","values":[votecountdata]}).execute()
     return
 
+def get_contestants():
+    global twowsheetid
+    response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "Signups!A2:C", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    return response["values"]
+    
 def id_to_char(id):
     if (id < 26):
         return chr(id+65)
@@ -133,7 +140,14 @@ def signup(requser,requsername,configbypass):
     status = configs[1][1]
     if (status != 1 and not configbypass):
         return (["405","02","Signups have ended, you may not sign up right now."])
-    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "Signup!A1:C2", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[[requser,requsername,time.time()]]}).execute()
+    contestants = get_contestants()
+    is_contestant = False
+    for contestant in contestants:
+        if (contestant[0] == requser):
+            is_contestant = True
+    if (is_contestant):
+        return(["403","01","You have previously already signed up for this event."])
+    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "Signup!A1:C2", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[[str(requser),requsername,time.time()]]}).execute()
     return (["200","02","You have been signed up, you may now view the event channel for more information."])
     
 def gen_screen(requser,configbypass):
@@ -357,6 +371,8 @@ async def on_message(message):
         await message.channel.send("This bot is open source, the source code is at: <https://github.com/RandomGamer123/DiscordModerationBot>.")
         return
     if (command == "twowevent" and perms >= 0):
+        roleguild = client.get_guild(348398590051221505)
+        participantrole = discord.utils.get(roleguild.roles, id=twoweventroleid)
         if (len(args) == 0):
             subcommand = "info"
         else:
@@ -372,6 +388,7 @@ async def on_message(message):
             await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info. This command must be used with a subcommand. Example subcommands include `respond` or `vote`.".format(prefix))
         if (subcommand == "signup"):
             result = signup(message.author.id,message.author.name,cfgbypass)
+            await message.author.add_roles(participantrole,reason="Signed up for event.")
             await message.channel.send(result[2])
         if (subcommand == "vote"):
             if ((len(args) == 0) or (args[0] == "genscreen" and perms >= 30)): # No arguments, or force genscreen, so generate screen
