@@ -6,6 +6,18 @@
 			},
 			"02": {
 				"desc": "You have been signed up, you may now view the event channel for more information."
+			},
+			"03": {
+				"desc": "Your response:\n`{}`\nhas been submitted. This is response {} out of {} that you can submit this round."
+			},
+			"04": {
+				"desc": "Your response:\n`{}`\nhas been submitted. This is response {} out of {} that you can submit this round. You also have been signed up for the event."
+			},
+			"05": {
+				"desc": "Your response:\n`{}`\nhas been submitted. This is response {} out of {} that you can submit this round."
+			},
+			"06": {
+				"desc": "Your old response with response number of {} has been edited to be:\n`{}`"
 			}
 		},
 		"400": {
@@ -20,11 +32,23 @@
 			},
 			"04": {
 				"desc": "Your vote contains invalid, repeated, or missing characters in it. Here are the characters in concern:\nInvalid / Extra Characters: {}\nRepeated Characters: {}\nMissing Characters: {}"
+			},
+			"05": {
+				"desc": "The response number that you wish to edit must be an integer greater than 0."
+			},
+			"06": {
+				"desc": "Your response must be less than or equal to 120 characters if submitted through the bot. If you wish to submit a response longer than this, please DM me to get it manually vetted."
 			}
 		},
 		"403": {
 			"01": {
 				"desc": "You have previously already signed up for this event."
+			},
+			"02": {
+				"desc": "You have already submitted {} responses, and the limit of responses you can submit is {}, so you cannot submit any more.\nTo edit your response, type in `{}twowevent respond -edit <response_number_to_edit> <new_response>`.\nExample command:`{}respond -edit 1 This will edit your first response to become this.`"
+			},
+			"03": {
+				"desc": "Only contestants may submit responses at this time, and you are not a contestant."
 			}
 		},
 		"405": {
@@ -33,6 +57,12 @@
 			},
 			"02": {
 				"desc": "Signups have ended, you may not sign up right now."
+			},
+			"03": {
+				"desc": "The current status is not responding, so you may not respond right now."
+			},
+			"04": {
+				"desc": "You have not submitted a response with response number of {}."
 			}
 		}
 	}

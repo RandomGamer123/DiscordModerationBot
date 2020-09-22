@@ -1,4 +1,4 @@
-import discord,json,os,re,httplib2,time,datetime,hashlib
+import discord,json,os,re,httplib2,time,datetime,hashlib,io
 import numpy as np
 from apiclient import discovery
 from google.oauth2 import service_account
@@ -102,6 +102,23 @@ def get_contestants():
     global twowsheetid
     response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "Signup!A2:C", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
     return response["values"]
+
+def get_responses():
+    global twowsheetid
+    response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "Responses!A2:E", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    if "values" in response:
+        return response["values"]
+    return []
+
+def get_allowed_response_count(requser):
+    global twowsheetid
+    response = service.spreadsheets().values().get(spreadsheetId = twowsheetid, range = "RspCount!A2:B", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
+    if "values" in response:
+        data = response["values"]
+        for user in data:
+            if (str(user[0]) == str(requser)):
+                return int(user[1])
+    return 1
     
 def id_to_char(id):
     if (id < 26):
@@ -149,7 +166,64 @@ def signup(requser,requsername,configbypass):
         return(["403","01","You have previously already signed up for this event."])
     service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "Signup!A1:C2", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[[str(requser),requsername,time.time()]]}).execute()
     return (["200","02","You have been signed up, you may now view the event channel for more information."])
-    
+
+def respond(requser,requsername,response,edit,editnumber,configbypass):
+    global twowsheetid 
+    configs = get_twow_event_config()
+    status = configs[1][1]
+    if (status not in [1,2] and not configbypass):
+        return (["405","03","The current status is not responding, so you may not respond right now."])
+    signupstatus = 0 # 0 -> Normal responding; 1 -> Signed up user successfully; 2 -> Did not sign up user successfully as user was already signed up
+    if (status == 1): # User is signing up at the same time
+        signupresponse = signup(requser,requsername,configbypass)
+        if (signupresponse[0] == "200"):
+            signupstatus = 1
+        else:
+            signupstatus = 2
+    if (status == 2): # Check if user is a contestant
+        contestantslist = get_contestants()
+        is_not_contestant = True
+        for contestant in contestantslist:
+            if (str(contestant[0]) == str(requser)):
+                is_not_contestant = False
+                break
+        if (is_not_contestant):
+            return (["403","03","Only contestants may submit responses at this time, and you are not a contestant."])
+    if (len(response) > 120):
+        return (["400","06","Your response must be less than or equal to 120 characters if submitted through the bot. If you wish to submit a response longer than this, please DM me to get it manually vetted."])
+    curresponses = get_responses()
+    if (edit):
+        if (editnumber <= 0):
+            return (["400","05","The response number that you wish to edit must be an integer greater than 0."])
+        responserow = 0
+        lclrow = 2
+        if (len(curresponses) != 0):
+            for rspcombo in curresponses:
+                if (str(rspcombo[0]) == str(requser)):
+                    if (int(rspcombo[4]) == int(editnumber)):
+                        responserow = lclrow
+                        break
+                    lclrow += 1
+        if (responserow == 0):
+            return (["405","04","You have not submitted a response with response number of {}.".format(editnumber)])
+        updateresponse = service.spreadsheets().values().update(spreadsheetId = twowsheetid, range = "Responses!C{0}:D{0}".format(responserow), valueInputOption="RAW", body = {"range":"Responses!C{0}:D{0}".format(responserow),"majorDimension":"ROWS","values":[[time.time(),response]]}).execute()
+        return (["200","06","Your old response with response number of {} has been edited to be:\n`{}`".format(editnumber,response)])
+    responsecount = 0
+    if (len(curresponses) != 0): # If there are submitted responses
+        for rspcombo in curresponses:
+            if (str(rspcombo[0]) == str(requser)):
+                responsecount += 1
+    maxresponsecount = get_allowed_response_count(requser)
+    if (responsecount >= maxresponsecount):
+        return (["403","02","You have already submitted {} responses, and the limit of responses you can submit is {}, so you cannot submit any more.\nTo edit your response, type in `{}respond -edit <response_number_to_edit> <new_response>`.\nExample command:`{}respond -edit 1 This will edit your first response to become this.`".format(responsecount,maxresponsecount,prefix,prefix)])
+    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "Responses!A1:E2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body={"majorDimension": "ROWS","values":[[str(requser),requsername,time.time(),response,(responsecount+1)]]}).execute()
+    if (signupstatus == 0):
+        return (["200","03","Your response:\n`{}`\nhas been submitted. This is response {} out of {} that you can submit this round.".format(response,(responsecount+1),maxresponsecount)])
+    elif (signupstatus == 1):
+        return (["200","04","Your response:\n`{}`\nhas been submitted. This is response {} out of {} that you can submit this round. You also have been signed up for the event.".format(response,(responsecount+1),maxresponsecount)])
+    else: #signupstatus is 2
+        return (["200","05","Your response:\n`{}`\nhas been submitted. This is response {} out of {} that you can submit this round.".format(response,(responsecount+1),maxresponsecount)])
+        
 def gen_screen(requser,configbypass):
     global twowsheetid
     configs = get_twow_event_config() # Config order: Line 0 (A2:B2) - screensize; Line 1 (A3:B3) - status [0 -> nothing, 1 -> signups, 2 -> responding, 3 -> voting]
@@ -412,7 +486,7 @@ async def on_message(message):
                 responses = screendata[0]
                 rspstr = ""
                 for i in range(len(responses)):
-                    rspstr = rspstr + id_to_char(i) + ": " + responses[i] + "\n"
+                    rspstr = rspstr + id_to_char(i) + ": " + responses[i] + " [WC: {}]\n".format(wordcount(responses[i]))
                 howtovote = "How to vote?\nStart your vote with a square bracket `[`, then put the screen name, shown in the first line of this message. Then, order the responses from best to worst, with the left side being the best and the right side being the worst, then end the vote with another square bracket `]` and then DM it to the bot with the command `!twowevent vote <yourvote>` (Do not include the angle brackets.) An example vote would be: `!twowevent vote [YUASJDISIP JEDCHBFAIG]`.\nMore information can be found at the `Voting` section of the following document: https://docs.google.com/document/d/1gYozaDz-neG4QB0gg39fYPX0oI7GBFjXAb2j_fDm3lk/edit?usp=sharing"
                 await message.channel.send("```md\nScreen {}\n{}```{}".format(screenname,rspstr,howtovote))
             else:
@@ -425,6 +499,62 @@ async def on_message(message):
                     else:
                         statusresponse = process_vote(vote,message.author.id,message.author.name,cfgbypass)
                         await message.channel.send(statusresponse[2])
+        if (subcommand == "getresponses"):
+            if (not isinstance(message.channel, discord.DMChannel)):
+                await message.channel.send("This command must be done in DMs.")
+                return
+            responselist = get_responses()
+            if (len(responselist) == 0):
+                await message.channel.send("There are no responses that you can view.")
+                return
+            dispresponses = "```\n"
+            dispall = False
+            requser = message.author.id
+            if (len(args) != 0 and (args[0] == "-dispall" and perms >= 40)):
+                dispall = True
+            for response in responselist:
+                if (dispall or (str(response[0]) == str(requser))):
+                    dispresponses = dispresponses + response[3] + "\n"
+            if (dispresponses == "```\n"):
+                await message.channel.send("There are no responses that you can view.")
+                return
+            dispresponses = dispresponses + "```"
+            if (len(dispresponses) > 1950):
+                uploadfile = discord.File(fp = io.StringIO(dispresponses[4:-4]), filename = "retrieved_responses.txt")
+                await message.channel.send(content = "Response list too large, it has been attached as a file.", file = uploadfile)
+            else:
+                await message.channel.send(dispresponses)
+        if (subcommand == "respond"):
+            if (not isinstance(message.channel, discord.DMChannel)):
+                await message.channel.send("This command must be done in DMs.")
+                return
+            edit = False
+            editnumber = 0
+            if (len(args) != 0 and args[0] == "-edit"):
+                edit = True
+                if (len(args) < 2):
+                    await message.channel.send("Missing edit number and response. Not enough arguments.\nCommand Format: `{0}twowevent respond [-edit] [editnumber] <response>`\nExample Command 1: `{0}twowevent respond This is a response.`\nExample Command 2 `{0}twowevent respond -edit 1 This will edit your first response to become this.`".format(prefix))
+                editnumber = args.pop(1)
+                try:
+                    editnumber = int(editnumber)
+                except:
+                    await message.channel.send("Edit number must be integer. Not enough arguments.\nCommand Format: `{0}twowevent respond [-edit] [editnumber] <response>`\nExample Command 1: `{0}twowevent respond This is a response.`\nExample Command 2 `{0}twowevent respond -edit 1 This will edit your first response to become this.`".format(prefix))
+                args.pop(0)
+            if (len(args) == 0):
+                await message.channel.send("Response not found in command. Not enough arguments.\nCommand Format: `{0}twowevent respond [-edit] [editnumber] <response>`\nExample Command 1: `{0}twowevent respond This is a response.`\nExample Command 2 `{0}twowevent respond -edit 1 This will edit your first response to become this.`".format(prefix))
+                return
+            response = " ".join(args)
+            submitresponseresponse = respond(message.author.id,message.author.name,response,edit,editnumber,cfgbypass)
+            if (submitresponseresponse[0] == "200" and (submitresponseresponse[1] in ["04","05"])):
+                if ((message.guild is not None) and (message.guild.id == 348398590051221505)):
+                    userobj = message.author
+                else:
+                    userobj = roleguild.get_member(message.author.id)
+                if (userobj is not None):
+                    await userobj.add_roles(participantrole,reason="Signed up for event.")
+            await message.channel.send(submitresponseresponse[2])
+            if (submitresponseresponse[0] == "200"):
+                await message.channel.send("The word count of the response `{}` you just submitted is: `{}`.".format(response,wordcount(response)))
     if (command == "testsheets" and perms >= 30):
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "TestSheet!A1:B2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[["testing",message.id]]}).execute()
     if (command == "print" and perms >= 40):
