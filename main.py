@@ -427,19 +427,29 @@ async def on_message(message):
         if targetcmd == "all":
             for cmd,data in helpdata.items():
                 if data["perms"] <= perms:
-                    output += "`{0}{1} {2}`- {3}\n".format(prefix,cmd,data["usage"],data["description"])
+                    displaycmd = cmd + ' '
+                    desc = data["description"]
+                    if (desc[0:12] == "|subcommand|"):
+                        displaycmd = ""
+                        desc = desc[12:]
+                    output += "`{0}{1}{2}`- {3}\n".format(prefix,displaycmd,data["usage"],desc)
             await message.channel.send(output+"Note that arguments encased in angle brackets (`<>`) are mandatory, while those encased in square brackets (`[]`) are optional.")
             return
         elif targetcmd in helpdata:
             data = helpdata[targetcmd]
             if data["perms"] <= perms:
-                await message.channel.send("`{0}{1} {2}`- {3}\n Note that arguments encased in angle brackets (`<>`) are mandatory, while those encased in square brackets (`[]`) are optional.".format(prefix,targetcmd,data["usage"],data["description"]))
+                displaycmd = targetcmd + ' '
+                desc = data["description"]
+                if (desc[0:12] == "|subcommand|"):
+                    displaycmd = ""
+                    desc = desc[12:]
+                await message.channel.send("`{0}{1}{2}`- {3}\n Note that arguments encased in angle brackets (`<>`) are mandatory, while those encased in square brackets (`[]`) are optional.".format(prefix,displaycmd,data["usage"],desc))
                 return
             else:
-                await message.channel.send("You cannot access the help for this command.")
+                await message.channel.send("You cannot access the help for this command/subcommand.")
                 return
         else:
-            await message.channel.send("The command {}{} is not a command.".format(prefix,targetcmd))
+            await message.channel.send("The command {}{} is not a command or subcommand.".format(prefix,targetcmd))
             return
     if (command == "getsource" and perms >= 0):
         await message.channel.send("This bot is open source, the source code is at: <https://github.com/RandomGamer123/DiscordModerationBot>.")
@@ -459,7 +469,7 @@ async def on_message(message):
             else:
                 subcommand = args.pop(0)
         if (subcommand == "info"):
-            await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info. This command must be used with a subcommand. Example subcommands include `respond` or `vote`.".format(prefix))
+            await message.channel.send("This module is for the integration of the bot with the TWOW side-event. To get help about this module, please run `{}help twowevent` for more info. This command must be used with a subcommand. Example subcommands include `signup`, `getresponses`, `respond`, or `vote`.\nTo get more information about how the event works, you can also read https://docs.google.com/document/u/2/d/1gYozaDz-neG4QB0gg39fYPX0oI7GBFjXAb2j_fDm3lk/edit".format(prefix))
         if (subcommand == "signup"):
             result = signup(message.author.id,message.author.name,cfgbypass)
             if ((message.guild is not None) and (message.guild.id == 348398590051221505)):

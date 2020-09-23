@@ -1,12 +1,47 @@
 {
 	"help":{
 		"description":"Displays information about all commands or a specified command.",
-		"usage":"[command]",
+		"usage":"[command / subcommand]",
+		"perms":0
+	},
+	"info":{
+		"description":"|subcommand|Subcommand of twowevent. Gives information about the event.",
+		"usage":"twowevent info",
+		"perms":0
+	},
+	"getresponses":{
+		"description":"|subcommand|Subcommand of twowevent. **Only usable in DMs.** Retrieves all your submitted responses.",
+		"usage":"twowevent getresponses",
+		"perms":0
+	},
+	"getsource":{
+		"description":"Gets a link to the Github of the bot.",
+		"usage":"",
+		"perms":0
+	},
+	"respond":{
+		"description":"|subcommand|Subcommand of twowevent. Submits or edits your response/responses for the event. **Only usable in DMs.** Only usable during responding or signup periods. To submit a response, ignore the [-edit] and [editnumber] arguments. To edit a response, type `-edit` as the argument for [-edit], and the response number you wish to edit for the argument for the [-editnumber] field.",
+		"usage":"twowevent respond [-edit] [editnumber] <response>",
+		"perms":0
+	},
+	"signup":{
+		"description":"|subcommand|Subcommand of twowevent. Signs you up for the event. Only usable during signup period.",
+		"usage":"twowevent signup",
+		"perms":0
+	},
+	"twowevent":{
+		"description":"The main command for the TWOW event. Subcommands include `info`, `signup`, `respond`, `vote`, and `getresponses`. To get info on the subcommands, just do `!help [subcommand]`.",
+		"usage":"[*args] (depends on subcommand)",
 		"perms":0
 	},
 	"verify":{
 		"description":"Verifies that you are in the group, and gives certain relevant roles based on your rank and ownership of premium classes.",
 		"usage":"<code> <username> (For verification instructions type `!verify`)",
+		"perms":0
+	},
+	"vote":{
+		"description":"|subcommand|Subcommand of twowevent. Submits a vote or generates a voting screen for the event. **Only usable in DMs.** Only usable during voting periods. To generate the screen, type in the command without any arguments (ie. `!twowevent vote`)",
+		"usage":"twowevent vote [vote]",
 		"perms":0
 	}
 }
