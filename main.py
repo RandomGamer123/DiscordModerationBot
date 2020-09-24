@@ -457,6 +457,7 @@ async def on_message(message):
     if (command == "twowevent" and perms >= 0):
         roleguild = client.get_guild(348398590051221505)
         participantrole = discord.utils.get(roleguild.roles, id=twoweventroleid)
+        submittedrole = discord.utils.get(roleguild.roles, id=758481239236673566)
         if (len(args) == 0):
             subcommand = "info"
         else:
@@ -565,6 +566,12 @@ async def on_message(message):
             await message.channel.send(submitresponseresponse[2])
             if (submitresponseresponse[0] == "200"):
                 await message.channel.send("The word count of the response `{}` you just submitted is: `{}`.".format(response,wordcount(response)))
+                if ((message.guild is not None) and (message.guild.id == 348398590051221505)):
+                    userobj = message.author
+                else:
+                    userobj = roleguild.get_member(message.author.id)
+                if (userobj is not None):
+                    await userobj.add_roles(submittedrole,reason="Submitted a response for the event.")
     if (command == "testsheets" and perms >= 30):
         service.spreadsheets().values().append(spreadsheetId = warninglogid, range = "TestSheet!A1:B2", valueInputOption = "RAW", insertDataOption = "INSERT_ROWS", body = {"values":[["testing",message.id]]}).execute()
     if (command == "print" and perms >= 40):
