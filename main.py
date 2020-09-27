@@ -86,10 +86,13 @@ def get_vote_count_data(voteindex): # Index is the row number in Google Sheets -
 
 def append_vote_data(username,userid,votedata,votecountdata):
     global twowsheetid
-    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "VoteMatrix!D7:AA8", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[votedata]}).execute()
-    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "VoteMatrix!A7:B8", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[[username,str(userid)]]}).execute()
-    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "VoteCountMatrix!D7:AA8", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[votecountdata]}).execute()
-    service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "VoteCountMatrix!A7:B8", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[[username,str(userid)]]}).execute()
+    response = service.spreadsheets().values().append(spreadsheetId = twowsheetid, range = "VoteMatrix!D7:AA8", valueInputOption = "RAW", insertDataOption = "OVERWRITE", body={"majorDimension": "ROWS","values":[votedata]}).execute()
+    tablerange = response["updates"]["updatedRange"]
+    firstunit = tablerange.split("!")[1].split(":")[0]
+    voterow = re.findall(r'\d+', firstunit)[0]
+    service.spreadsheets().values().update(spreadsheetId = twowsheetid, range = "VoteMatrix!A{0}:B{0}".format(voterow), valueInputOption = "RAW", body={"range":"VoteMatrix!A{0}:B{0}".format(voterow),"majorDimension": "ROWS","values":[[username,str(userid)]]}).execute()
+    service.spreadsheets().values().update(spreadsheetId = twowsheetid, range = "VoteCountMatrix!D{0}:{0}".format(voterow), valueInputOption="RAW", body = {"range":"VoteCountMatrix!D{0}:{0}".format(voterow),"majorDimension":"ROWS","values":[votecountdata]}).execute()
+    service.spreadsheets().values().update(spreadsheetId = twowsheetid, range = "VoteCountMatrix!A{0}:B{0}".format(voterow), valueInputOption = "RAW", body={"range":"VoteCountMatrix!A{0}:B{0}".format(voterow),"majorDimension": "ROWS","values":[[username,str(userid)]]}).execute()
     return
 
 def update_vote_data(voteindex,votedata,votecountdata):
