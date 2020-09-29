@@ -3,7 +3,12 @@ import numpy as np
 from apiclient import discovery
 from google.oauth2 import service_account
 
-client = discord.Client()
+intents = discord.Intents.none()
+intents.guilds = True
+#intents.members = True - Cannot turn this on, blame diamond
+intents.messages = True
+
+client = discord.Client(intents=intents)
 
 with open("Config/token.json") as token_file:
     tokens = json.load(token_file)
@@ -15,6 +20,8 @@ with open("Config/help.json") as help_file:
     helpdata = json.load(help_file)
 
 prefix = config["prefix"]
+
+startactivity = discord.Game(name="Type {}help to get started!".format(prefix))
 
 scopes = ["https://www.googleapis.com/auth/spreadsheets"]
 secret_file = "Config/client_secret.json"
@@ -377,6 +384,7 @@ async def on_ready():
     global warnings
     warnings = get_warnings()
     print('We have logged in as {0.user}'.format(client))
+    await client.change_presence(activity=startactivity)
 
 @client.event
 async def on_message(message):
@@ -479,7 +487,8 @@ async def on_message(message):
             if ((message.guild is not None) and (message.guild.id == 348398590051221505)):
                 userobj = message.author
             else:
-                userobj = roleguild.get_member(message.author.id)
+                #userobj = roleguild.get_member(message.author.id)
+                userobj = await roleguild.fetch_member(message.author.id)
             if (userobj is not None):
                 await userobj.add_roles(participantrole,reason="Signed up for event.")
             await message.channel.send(result[2])
@@ -563,7 +572,8 @@ async def on_message(message):
                 if ((message.guild is not None) and (message.guild.id == 348398590051221505)):
                     userobj = message.author
                 else:
-                    userobj = roleguild.get_member(message.author.id)
+                    #userobj = roleguild.get_member(message.author.id)
+                    userobj = await roleguild.fetch_member(message.author.id)
                 if (userobj is not None):
                     await userobj.add_roles(participantrole,reason="Signed up for event.")
             await message.channel.send(submitresponseresponse[2])
@@ -572,7 +582,8 @@ async def on_message(message):
                 if ((message.guild is not None) and (message.guild.id == 348398590051221505)):
                     userobj = message.author
                 else:
-                    userobj = roleguild.get_member(message.author.id)
+                    #userobj = roleguild.get_member(message.author.id)
+                    userobj = await roleguild.fetch_member(message.author.id)
                 if (userobj is not None):
                     await userobj.add_roles(submittedrole,reason="Submitted a response for the event.")
     if (command == "testsheets" and perms >= 30):
@@ -843,50 +854,55 @@ async def on_message(message):
             roleguild = message.guild
         else:
             roleguild = client.get_guild(348398590051221505)
-        await message.author.edit(nick=rename)
+        if (message.guild.id == 348398590051221505):
+            userobj = message.author
+        else:
+            #userobj = roleguild.get_member(message.author.id)
+            userobj = await roleguild.fetch_member(message.author.id)
+        await userobj.edit(nick=rename)
         if (grouprank == 0):
             notingrouprole = discord.utils.get(roleguild.roles, name="NOT IN GROUP")
             if message.guild.id == 348398590051221505:
                 verifiedrole = discord.utils.get(roleguild.roles, name="Verified")
-                await message.author.remove_roles(verifiedrole)
-            await message.author.add_roles(notingrouprole,reason="User is not in the group.")
+                await userobj.remove_roles(verifiedrole)
+            await userobj.add_roles(notingrouprole,reason="User is not in the group.")
             await message.channel.send("You are not in the group. Please submit a request to join the group and wait until you are accepted, then request a new code a reverify. The related roles have been given.")
         if (grouprank > 0):
             verifiedrole = discord.utils.get(roleguild.roles, name="Verified")
             passengersrole = discord.utils.get(roleguild.roles, name="Passengers")
-            await message.author.add_roles(verifiedrole,reason="User is in the group.")
-            await message.author.add_roles(passengersrole,reason="User is in the group.")
+            await userobj.add_roles(verifiedrole,reason="User is in the group.")
+            await userobj.add_roles(passengersrole,reason="User is in the group.")
             if message.guild.id == 348398590051221505:
                 notingrouprole = discord.utils.get(roleguild.roles, name="NOT IN GROUP")
                 if grouprank == 241:
                     traineerole = discord.utils.get(roleguild.roles, name="Trainee")
-                    await message.author.add_roles(traineerole)
+                    await userobj.add_roles(traineerole)
                 if grouprank > 242:
                     staffrole = discord.utils.get(roleguild.roles, name="Staff Members")
-                    await message.author.add_roles(staffrole)
+                    await userobj.add_roles(staffrole)
                     traineerole = discord.utils.get(roleguild.roles, name="Trainee")
-                    await message.author.remove_roles(traineerole)
+                    await userobj.remove_roles(traineerole)
                 if boughtclass == "GI":
                     execpass = discord.utils.get(roleguild.roles, name="Executive Passengers")
                     classrole = discord.utils.get(roleguild.roles, name="Gold Investors")
-                    await message.author.add_roles(execpass)
-                    await message.author.add_roles(classrole)
+                    await userobj.add_roles(execpass)
+                    await userobj.add_roles(classrole)
                 if boughtclass == "SI":
                     execpass = discord.utils.get(roleguild.roles, name="Executive Passengers")
                     classrole = discord.utils.get(roleguild.roles, name="Silver Investors")
-                    await message.author.add_roles(execpass)
-                    await message.author.add_roles(classrole)
+                    await userobj.add_roles(execpass)
+                    await userobj.add_roles(classrole)
                 if boughtclass == "FC":
                     execpass = discord.utils.get(roleguild.roles, name="Executive Passengers")
                     classrole = discord.utils.get(roleguild.roles, name="First Class")
-                    await message.author.add_roles(execpass)
-                    await message.author.add_roles(classrole)
+                    await userobj.add_roles(execpass)
+                    await userobj.add_roles(classrole)
                 if boughtclass == "BC":
                     execpass = discord.utils.get(roleguild.roles, name="Executive Passengers")
                     classrole = discord.utils.get(roleguild.roles, name="Business Class")
-                    await message.author.add_roles(execpass)
-                    await message.author.add_roles(classrole)
-                await message.author.remove_roles(notingrouprole)
+                    await userobj.add_roles(execpass)
+                    await userobj.add_roles(classrole)
+                await userobj.remove_roles(notingrouprole)
             await message.channel.send("Verification complete.")
         clearcommand = (service.spreadsheets().values().clear(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F")).execute()
         response = (service.spreadsheets().values().update(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F", valueInputOption="RAW", body = {"range":"RobloxCodePairs!A2:F","majorDimension":"ROWS","values":newcodelist})).execute()
