@@ -213,7 +213,7 @@ def respond(requser,requsername,response,edit,editnumber,configbypass):
                     if (int(rspcombo[4]) == int(editnumber)):
                         responserow = lclrow
                         break
-                    lclrow += 1
+                lclrow += 1
         if (responserow == 0):
             return (["405","04","You have not submitted a response with response number of {}.".format(editnumber)])
         updateresponse = service.spreadsheets().values().update(spreadsheetId = twowsheetid, range = "Responses!C{0}:D{0}".format(responserow), valueInputOption="RAW", body = {"range":"Responses!C{0}:D{0}".format(responserow),"majorDimension":"ROWS","values":[[time.time(),response]]}).execute()
