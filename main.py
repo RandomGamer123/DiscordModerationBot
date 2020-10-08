@@ -854,7 +854,7 @@ async def on_message(message):
             roleguild = message.guild
         else:
             roleguild = client.get_guild(348398590051221505)
-        if (message.guild.id == 348398590051221505):
+        if ((message.guild is not None) and (message.guild.id == 348398590051221505)):
             userobj = message.author
         else:
             #userobj = roleguild.get_member(message.author.id)
