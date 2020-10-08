@@ -489,7 +489,7 @@ async def on_message(message):
             else:
                 #userobj = roleguild.get_member(message.author.id)
                 userobj = await roleguild.fetch_member(message.author.id)
-            if ((userobj is not None) and result[1] != "405"):
+            if ((userobj is not None) and result[0] != "405"):
                 await userobj.add_roles(participantrole,reason="Signed up for event.")
             await message.channel.send(result[2])
         if (subcommand == "vote"):
