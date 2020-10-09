@@ -826,9 +826,12 @@ async def on_message(message):
         if len(args) < 2:
             await message.channel.send("You need at least 2 arguments for this command. Command format: !verify <code> <username>. Do not include the brackets. Visit <https://www.roblox.com/games/4890252160/SWISS-Verification-Game> to get the verification code.")
             return
-        verifycodes = (service.spreadsheets().values().get(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute())["values"]
         code = args.pop(0)
         name = " ".join(args)
+        if (code[0] == "<" or code[-1] == ">"):
+            await message.channel.send("Do not include the angle brackets with the code or username, please try again.")
+            return
+        verifycodes = (service.spreadsheets().values().get(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute())["values"]
         grouprank = -1
         newcodelist = verifycodes[:]
         emptyvals = 0
