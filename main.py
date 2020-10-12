@@ -1,4 +1,4 @@
-import discord,json,os,re,httplib2,time,datetime,hashlib,io
+import discord,json,os,re,httplib2,time,datetime,hashlib,io,requests
 import numpy as np
 from apiclient import discovery
 from google.oauth2 import service_account
@@ -34,6 +34,75 @@ twowsheetid = tokens["twowsheetid"]
 
 twoweventroleid = 757702654339055736
 
+cookietestlink = "http://api.roblox.com/incoming-items/counts"
+csrftokenendpoint = "https://auth.roblox.com/v1/logout"
+cookie = tokens["robloxverifybotcookie"]
+cookies = {".ROBLOSECURITY": cookie}
+headers = {'User-Agent': 'Role Updating Bot'}
+updategrouproleendpoint = "https://groups.roblox.com/v1/groups/{groupid}/users/{userid}"
+groupid = "2735831"
+csrftoken = None
+ranktoiddict = {239: 18383972, 240: 18383966}
+
+def validatecookie():
+    resp = requests.get(cookietestlink, cookies = cookies, headers = headers)
+    if (resp.status_code == 403):
+        return False
+    else:
+        return True
+
+def getcsrftoken():
+    resp = requests.post(csrftokenendpoint, cookies = cookies, headers = headers)
+    csrftoken = resp.headers["X-CSRF-Token"]
+    return csrftoken
+
+def updategrouprole(user,role,noloop = False): # Return possibilities: 0 -> Token Failure, 1 -> Success, 2 -> User has higher role than role that will be updated to [UNUSED], 3 -> User has higher role position than bot, 4 -> 503 error, 5 -> User Invalid, 6 -> Two runs of repeated invalid CSRF token, 7 -> Invalid role / role not supported, 8 -> Other error
+    if (validatecookie):
+        global csrftoken
+        if (csrftoken is None):
+            csrftoken = getcsrftoken()
+        lclheaders = dict(headers)
+        lclheaders["X-CSRF-Token"] = csrftoken
+        lclendpoint = updategrouproleendpoint.format(groupid = groupid, userid = str(user))
+        try:
+            reqroleid = ranktoiddict[int(role)]
+        except KeyError:
+            return 7
+        payload = {"roleId": reqroleid}
+        response = requests.patch(lclendpoint, cookies = cookies, json = payload, headers = lclheaders)
+        if (response.status_code == 200):
+            return 1
+        responsejson = response.json()
+        code = responsejson["errors"][0]["code"]
+        if (response.status_code == 403):
+            if (code == 0): #Invalid csrf token
+                if (noloop): #Previous run also had invalid csrf token, return 6
+                    return 6
+                csrftoken = response.headers["X-CSRF-Token"]
+                newrsp = updategrouprole(user,role,True)
+                return newrsp
+            if (code == 4):
+                return 3
+            else:
+                return 8
+        if (response.status_code == 401):
+            return 0
+        if (response.status_code == 503):
+            return 4
+        if (response.status_code == 400):
+            if (code == 3):
+                return 5
+        return 8
+    else:
+        return 0
+
+def role_exec(robloxid):
+    response = updategrouprole(robloxid,240)
+    if (response == 1):
+        return ([True,"Your Roblox account also had its role automatically updated to Executive Passenger, thank you for purchasing a premium ticket."])
+    else:
+        return ([False,response])
+    
 def get_warnings():
     global warninglogid
     response = service.spreadsheets().values().get(spreadsheetId = warninglogid, range = "Warnings!A2:H", majorDimension="ROWS", valueRenderOption = "UNFORMATTED_VALUE").execute()
@@ -837,6 +906,7 @@ async def on_message(message):
         emptyvals = 0
         boughtclass = "EC"
         rename = ""
+        userrobloxid = 0
         for i in range(len(verifycodes)):
             codepair = verifycodes[i]
             if codepair[3] < time.time():
@@ -850,6 +920,7 @@ async def on_message(message):
                         emptyvals = emptyvals + 1
                         newcodelist.remove(codepair)
                         rename = codepair[0]
+                        userrobloxid = codepair[1]
         if (grouprank == -1):
             await message.channel.send("A matching code and username combination cannot be found or your code has expired. Please generate a new code.")
             return
@@ -869,7 +940,7 @@ async def on_message(message):
                 verifiedrole = discord.utils.get(roleguild.roles, name="Verified")
                 await userobj.remove_roles(verifiedrole)
             await userobj.add_roles(notingrouprole,reason="User is not in the group.")
-            await message.channel.send("You are not in the group. Please submit a request to join the group and wait until you are accepted, then request a new code a reverify. The related roles have been given.")
+            await message.channel.send("You are not in the group. Please submit a request to join the group and wait until you are accepted, then request a new code and reverify. The related roles have been given.")
         if (grouprank > 0):
             verifiedrole = discord.utils.get(roleguild.roles, name="Verified")
             passengersrole = discord.utils.get(roleguild.roles, name="Passengers")
@@ -905,6 +976,13 @@ async def on_message(message):
                     classrole = discord.utils.get(roleguild.roles, name="Business Class")
                     await userobj.add_roles(execpass)
                     await userobj.add_roles(classrole)
+                if boughtclass in ["GI","SI","FC","BC"]:
+                    if (grouprank == 239): #If user has group rank 239 -> Their rank is verified passenger
+                        role_update_status = role_exec(userrobloxid)
+                        if (role_update_status[0]):
+                            await message.channel.send(role_update_status[1])
+                        else:
+                            await message.channel.send("We attempted to update your role in the Roblox Group to Executive Passengers, however, an error occurred in the process, please DM <@156390113654341632> with the following error code: {}".format(role_update_status[1]))
                 await userobj.remove_roles(notingrouprole)
             await message.channel.send("Verification complete.")
         clearcommand = (service.spreadsheets().values().clear(spreadsheetId = verifylogid, range = "RobloxCodePairs!A2:F")).execute()
