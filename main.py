@@ -914,7 +914,7 @@ async def on_message(message):
                 emptyvals = emptyvals + 1
             else:
                 if codepair[2] == code:
-                    if codepair[0] == name:
+                    if codepair[0].lower() == name.lower():
                         grouprank = codepair[4]
                         boughtclass = codepair[5]
                         emptyvals = emptyvals + 1
