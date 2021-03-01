@@ -951,7 +951,7 @@ async def on_message(message):
                 if grouprank == 242:
                     traineerole = discord.utils.get(roleguild.roles, name="Trainee")
                     await userobj.add_roles(traineerole)
-                if grouprank > 242:
+                if ((grouprank > 242) and (grouprank == 241)):
                     staffrole = discord.utils.get(roleguild.roles, name="Staff Members")
                     await userobj.add_roles(staffrole)
                     traineerole = discord.utils.get(roleguild.roles, name="Trainee")
