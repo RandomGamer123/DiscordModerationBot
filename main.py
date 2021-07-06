@@ -946,7 +946,7 @@ async def on_message(message):
             passengersrole = discord.utils.get(roleguild.roles, name="Passengers")
             await userobj.add_roles(verifiedrole,reason="User is in the group.")
             await userobj.add_roles(passengersrole,reason="User is in the group.")
-            if message.guild.id == 348398590051221505:
+            if message.guild.id in [348398590051221505, 861775217918869575]:
                 notingrouprole = discord.utils.get(roleguild.roles, name="NOT IN GROUP")
                 if grouprank == 242:
                     traineerole = discord.utils.get(roleguild.roles, name="Trainee")
